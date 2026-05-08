@@ -173,7 +173,7 @@ export default function LandingPage() {
 
       {/* Cookie Banner */}
       {showCookies && (
-        <div className="fixed bottom-8 right-8 left-8 md:left-auto md:w-[400px] bg-white border border-zinc-200 shadow-2xl rounded-3xl p-6 z-[100] animate-in slide-in-from-bottom-8 duration-500">
+        <div className="fixed bottom-8 right-8 left-8 md:left-auto md:w-[400px] bg-white border border-zinc-200 shadow-2xl rounded-3xl p-6 z-100 animate-in slide-in-from-bottom-8 duration-500">
           <div className="flex gap-4 items-start">
             <HelpCircle className="text-indigo-600 shrink-0" size={24} />
             <div className="space-y-4">
