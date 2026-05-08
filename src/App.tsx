@@ -18,6 +18,7 @@ import Layout from './components/layout/Layout'
 import Seasons from './pages/clube/Seasons'
 import Teams from './pages/clube/Teams'
 import Access from './pages/clube/Access'
+import ClubProfile from './pages/clube/Profile'
 
 // Workspace Equipa
 import Planning from './pages/equipa/Planning'
@@ -27,6 +28,10 @@ import SessionDetail from './pages/equipa/SessionDetail'
 
 // Workspace Jogador
 import Questionnaire from './pages/jogador/Questionnaire'
+
+// Auth & Security
+import ForcePasswordChange from './pages/auth/ForcePasswordChange'
+import RegisterClub from './pages/RegisterClub'
 
 // Demo
 import DemoSeeder from './pages/DemoSeeder'
@@ -56,9 +61,10 @@ export default function App() {
         
         {/* Autenticação */}
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />
-        <Route path="/register" element={!user ? <Register /> : <Navigate to="/dashboard" />} />
+        <Route path="/register-club" element={!user ? <RegisterClub /> : <Navigate to="/dashboard" />} />
+        <Route path="/force-password-change" element={user ? <ForcePasswordChange /> : <Navigate to="/login" />} />
         
-        {/* Rotas Protegidas */}
+        {/* Workspace Protegido */}
         <Route element={user ? <Layout /> : <Navigate to="/login" />}>
           <Route path="/dashboard" element={<Dashboard />} />
           
@@ -66,6 +72,7 @@ export default function App() {
           <Route path="/clube/epocas" element={<Seasons />} />
           <Route path="/clube/equipas" element={<Teams />} />
           <Route path="/clube/acessos" element={<Access />} />
+          <Route path="/clube/perfil" element={<ClubProfile />} />
 
           {/* Workspace Equipa */}
           <Route path="/equipa/planeamento" element={<Planning />} />

@@ -28,10 +28,18 @@ export default function Layout() {
   const fetchUserRole = async () => {
     const user = auth.currentUser
     if (user) {
-      // Em produção, iríamos buscar ao Firestore. 
-      // Para testes rápidos, vamos simular baseado no email ou localstorage
-      const savedRole = localStorage.getItem('user_role') || 'admin_clube'
-      setUserRole(savedRole)
+      const userSnap = await getDoc(doc(db, 'users', user.uid))
+      if (userSnap.exists()) {
+        const userData = userSnap.data()
+        if (userData.mustChangePassword && location.pathname !== '/force-password-change') {
+          navigate('/force-password-change')
+          return
+        }
+        setUserRole(userData.role || 'staff')
+      } else {
+        // Fallback para dev
+        setUserRole(localStorage.getItem('user_role') || 'admin_clube')
+      }
     }
   }
 
@@ -63,7 +71,7 @@ export default function Layout() {
 
         <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
           <div className={`px-4 py-3 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ${!sidebarOpen && 'hidden'}`}>
-            Geral
+            Plataforma
           </div>
           <NavLink to="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" open={sidebarOpen} active={isActive('/dashboard')} />
           
@@ -73,9 +81,10 @@ export default function Layout() {
               <div className={`pt-6 pb-3 px-4 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ${!sidebarOpen && 'hidden'}`}>
                 Coordenação
               </div>
+              <NavLink to="/clube/perfil" icon={<Settings size={20} />} label="Perfil do Clube" open={sidebarOpen} active={isActive('/clube/perfil')} />
               <NavLink to="/clube/epocas" icon={<Trophy size={20} />} label="Épocas" open={sidebarOpen} active={isActive('/clube/epocas')} />
               <NavLink to="/clube/equipas" icon={<Users size={20} />} label="Equipas" open={sidebarOpen} active={isActive('/clube/equipas')} />
-              <NavLink to="/clube/acessos" icon={<ClipboardCheck size={20} />} label="Acessos" open={sidebarOpen} active={isActive('/clube/acessos')} />
+              <NavLink to="/clube/acessos" icon={<ClipboardCheck size={20} />} label="Logins & Acessos" open={sidebarOpen} active={isActive('/clube/acessos')} />
             </>
           )}
 

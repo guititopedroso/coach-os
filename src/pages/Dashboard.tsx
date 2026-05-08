@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, query, where, Timestamp, orderBy, limit } from 'firebase/firestore'
+import { collection, getDocs, query, where, Timestamp, orderBy, limit, doc, getDoc } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase/client'
 import { 
   Calendar, 
@@ -14,13 +14,23 @@ import {
 import { useNavigate } from 'react-router-dom'
 
 export default function Dashboard() {
-  const [role, setRole] = useState<'admin_clube' | 'staff' | 'jogador'>('staff')
+  const [role, setRole] = useState<string | null>(null)
   const [todaySession, setTodaySession] = useState<any>(null)
   const [pendingPSR, setPendingPSR] = useState(0)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
+    const fetchRole = async () => {
+      const user = auth.currentUser
+      if (user) {
+        const userSnap = await getDoc(doc(db, 'users', user.uid))
+        if (userSnap.exists()) {
+          setRole(userSnap.data().role)
+        }
+      }
+    }
+    fetchRole()
     fetchDashboardData()
   }, [])
 
@@ -35,16 +45,23 @@ export default function Dashboard() {
     setLoading(false)
   }
 
+  if (loading) return <div className="p-12 text-center text-zinc-500 italic">A carregar o teu centro de comando...</div>
   if (role === 'jogador') return <PlayerDashboard todaySession={todaySession} />
-  return <StaffDashboard todaySession={todaySession} pendingPSR={pendingPSR} />
+  return <StaffDashboard todaySession={todaySession} pendingPSR={pendingPSR} role={role} />
 }
 
-function StaffDashboard({ todaySession, pendingPSR }: any) {
+function StaffDashboard({ todaySession, pendingPSR, role }: any) {
+  const isAdmin = role === 'admin_clube'
+  
   return (
     <div className="space-y-10 animate-in fade-in duration-700">
       <div className="flex flex-col gap-1">
-        <h1 className="text-4xl font-black tracking-tight text-white">Resumo Diário</h1>
-        <p className="text-zinc-500 font-medium">Gestão da equipa para hoje, {new Date().toLocaleDateString('pt', { day: 'numeric', month: 'long' })}.</p>
+        <h1 className="text-4xl font-black tracking-tight text-white italic">
+          Olá, {isAdmin ? 'Administrador' : 'Treinador'}
+        </h1>
+        <p className="text-zinc-500 font-medium">
+          {isAdmin ? 'Resumo global do clube para hoje.' : 'Gestão da equipa para hoje.'}
+        </p>
       </div>
 
       {/* Grid de KPIs Escuros Premium */}
