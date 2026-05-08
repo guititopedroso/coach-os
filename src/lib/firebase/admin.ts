@@ -10,9 +10,11 @@ function createAdminApp(): App {
   // 1. Tentar carregar via variável de ambiente Base64 (Solução para Hostinger/Produção)
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     try {
-      const jsonStr = Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON, "base64").toString("utf-8");
+      // Remover espaços ou quebras de linha que a Hostinger possa injetar no Base64
+      const base64Clean = process.env.FIREBASE_SERVICE_ACCOUNT_JSON.replace(/\s/g, "");
+      const jsonStr = Buffer.from(base64Clean, "base64").toString("utf-8");
       const serviceAccount = JSON.parse(jsonStr);
-      // Garantir que as quebras de linha da chave privada são corrigidas
+      
       if (serviceAccount.private_key) {
         serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
       }
@@ -20,7 +22,7 @@ function createAdminApp(): App {
         credential: cert(serviceAccount),
       });
     } catch (e) {
-      console.error("Erro ao decodificar FIREBASE_SERVICE_ACCOUNT_JSON:", e);
+      console.error("Erro fatal ao decodificar FIREBASE_SERVICE_ACCOUNT_JSON:", e);
     }
   }
 
