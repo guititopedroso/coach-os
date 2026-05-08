@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { events } from "@/lib/db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
 
 const createSchema = z.object({
-  teamId: z.string().uuid(),
+  teamId: z.string(),
   type: z.enum(["training", "match", "rest", "friendly", "cup", "tournament", "cryo", "cohesion", "stage"]),
   title: z.string().min(1),
   date: z.string(),
@@ -24,8 +22,8 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
   const teamId = url.searchParams.get("teamId");
@@ -34,22 +32,19 @@ export async function GET(req: NextRequest) {
 
   if (!teamId) return NextResponse.json({ error: "teamId obrigatório" }, { status: 400 });
 
-  let conditions = [eq(events.teamId, teamId)];
-  if (from) conditions.push(gte(events.date, from));
-  if (to) conditions.push(lte(events.date, to));
+  let query = adminDb.collection("events").where("teamId", "==", teamId) as FirebaseFirestore.Query;
+  if (from) query = query.where("date", ">=", from);
+  if (to) query = query.where("date", "<=", to);
+  query = query.orderBy("date");
 
-  const rows = await db
-    .select()
-    .from(events)
-    .where(and(...conditions))
-    .orderBy(events.date, events.startTime);
-
+  const snap = await query.get();
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -57,6 +52,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Dados inválidos: " + parsed.error.issues[0].message }, { status: 400 });
   }
 
-  const [event] = await db.insert(events).values(parsed.data).returning();
+  const ref = adminDb.collection("events").doc();
+  const event = {
+    id: ref.id,
+    ...parsed.data,
+    isPublished: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  await ref.set(event);
   return NextResponse.json(event, { status: 201 });
 }

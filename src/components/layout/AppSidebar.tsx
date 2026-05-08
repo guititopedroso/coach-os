@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut as firebaseSignOut } from "firebase/auth";
+import { auth as firebaseAuth } from "@/lib/firebase/client";
 import { cn, getInitials, ROLE_LABELS } from "@/lib/utils";
 import { useState } from "react";
 
@@ -234,7 +235,11 @@ export default function AppSidebar({ user }: { user: User }) {
           )}
         </div>
         <button
-          onClick={() => signOut({ callbackUrl: "/login" })}
+          onClick={async () => {
+            await firebaseSignOut(firebaseAuth);
+            document.cookie = "__session=; path=/; max-age=0";
+            window.location.href = "/login";
+          }}
           className="btn btn-ghost btn-sm"
           style={{ width: "100%", justifyContent: collapsed ? "center" : "flex-start" }}
         >

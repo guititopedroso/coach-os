@@ -1,29 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { seasons } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
   // Desactivar todas as épocas do clube
-  await db
-    .update(seasons)
-    .set({ isActive: false })
-    .where(eq(seasons.clubId, user.clubId));
+  const allSnap = await adminDb
+    .collection("seasons")
+    .where("clubId", "==", user.clubId)
+    .get();
 
-  // Activar a época escolhida
-  await db
-    .update(seasons)
-    .set({ isActive: true })
-    .where(eq(seasons.id, id));
+  const batch = adminDb.batch();
+  allSnap.docs.forEach((d) => batch.update(d.ref, { isActive: false }));
+  batch.update(adminDb.collection("seasons").doc(id), { isActive: true });
+  await batch.commit();
 
   return NextResponse.json({ success: true });
 }

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { grSessions, grSessionPlayers, players } from "@/lib/db/schema";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -16,38 +14,39 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
   const from = url.searchParams.get("from");
   const to = url.searchParams.get("to");
 
-  let conditions: any[] = [eq(grSessions.clubId, user.clubId)];
-  if (from) conditions.push(gte(grSessions.date, from));
-  if (to) conditions.push(lte(grSessions.date, to));
+  let query = adminDb.collection("grSessions").where("clubId", "==", user.clubId) as FirebaseFirestore.Query;
+  if (from) query = query.where("date", ">=", from);
+  if (to) query = query.where("date", "<=", to);
+  query = query.orderBy("date");
 
-  const sessions = await db
-    .select()
-    .from(grSessions)
-    .where(and(...conditions))
-    .orderBy(grSessions.date);
+  const sessionsSnap = await query.get();
 
-  // Buscar jogadores por sessão
   const sessionsWithPlayers = await Promise.all(
-    sessions.map(async (s) => {
-      const sessionPlayers = await db
-        .select({
-          playerId: grSessionPlayers.playerId,
-          feedback: grSessionPlayers.feedback,
-          clipUrls: grSessionPlayers.clipUrls,
-          playerName: players.name,
+    sessionsSnap.docs.map(async (d) => {
+      const sessionData = { id: d.id, ...d.data() };
+      const playersSnap = await adminDb
+        .collection("grSessionPlayers")
+        .where("sessionId", "==", d.id)
+        .get();
+
+      const players = await Promise.all(
+        playersSnap.docs.map(async (p) => {
+          const pd = p.data();
+          const playerDoc = await adminDb.collection("players").doc(pd.playerId).get();
+          return {
+            ...pd,
+            playerName: playerDoc.exists ? playerDoc.data()?.name : null,
+          };
         })
-        .from(grSessionPlayers)
-        .leftJoin(players, eq(grSessionPlayers.playerId, players.id))
-        .where(eq(grSessionPlayers.sessionId, s.id));
-      return { ...s, players: sessionPlayers };
+      );
+      return { ...sessionData, players };
     })
   );
 
@@ -55,9 +54,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -65,16 +63,25 @@ export async function POST(req: NextRequest) {
 
   const { playerIds, ...sessionData } = parsed.data;
 
-  const [grSession] = await db
-    .insert(grSessions)
-    .values({ ...sessionData, clubId: user.clubId, createdBy: user.id })
-    .returning();
+  const ref = adminDb.collection("grSessions").doc();
+  const session = {
+    id: ref.id,
+    ...sessionData,
+    clipUrls: sessionData.clipUrls || [],
+    clubId: user.clubId,
+    createdBy: user.id,
+    createdAt: new Date().toISOString(),
+  };
+  await ref.set(session);
 
   if (playerIds && playerIds.length > 0) {
-    await db.insert(grSessionPlayers).values(
-      playerIds.map((pid) => ({ sessionId: grSession.id, playerId: pid }))
-    );
+    const batch = adminDb.batch();
+    playerIds.forEach((pid) => {
+      const pRef = adminDb.collection("grSessionPlayers").doc();
+      batch.set(pRef, { sessionId: ref.id, playerId: pid });
+    });
+    await batch.commit();
   }
 
-  return NextResponse.json(grSession, { status: 201 });
+  return NextResponse.json(session, { status: 201 });
 }

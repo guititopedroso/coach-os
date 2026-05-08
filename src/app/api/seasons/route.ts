@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { seasons, clubs } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -11,37 +9,36 @@ const createSchema = z.object({
   endDate: z.string(),
 });
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+export async function GET(req: NextRequest) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const rows = await db
-    .select()
-    .from(seasons)
-    .where(eq(seasons.clubId, user.clubId))
-    .orderBy(desc(seasons.createdAt));
+  const snap = await adminDb
+    .collection("seasons")
+    .where("clubId", "==", user.clubId)
+    .orderBy("createdAt", "desc")
+    .get();
 
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
-  }
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
-  const { name, startDate, endDate } = parsed.data;
-
-  const [season] = await db
-    .insert(seasons)
-    .values({ clubId: user.clubId, name, startDate, endDate, isActive: false })
-    .returning();
-
+  const ref = adminDb.collection("seasons").doc();
+  const season = {
+    id: ref.id,
+    clubId: user.clubId,
+    ...parsed.data,
+    isActive: false,
+    createdAt: new Date().toISOString(),
+  };
+  await ref.set(season);
   return NextResponse.json(season, { status: 201 });
 }

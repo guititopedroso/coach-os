@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { medicalRecords, players } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
 
 const createSchema = z.object({
-  playerId: z.string().uuid(),
-  teamId: z.string().uuid(),
+  playerId: z.string(),
+  teamId: z.string(),
   type: z.enum(["injury", "physio", "cryo", "massage", "other"]),
   description: z.string().min(1),
   bodyPart: z.string().optional(),
@@ -18,47 +16,49 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const rows = await db
-    .select({
-      id: medicalRecords.id,
-      playerId: medicalRecords.playerId,
-      teamId: medicalRecords.teamId,
-      type: medicalRecords.type,
-      description: medicalRecords.description,
-      bodyPart: medicalRecords.bodyPart,
-      severity: medicalRecords.severity,
-      startDate: medicalRecords.startDate,
-      endDate: medicalRecords.endDate,
-      isActive: medicalRecords.isActive,
-      notes: medicalRecords.notes,
-      createdAt: medicalRecords.createdAt,
-      playerName: players.name,
+  const snap = await adminDb
+    .collection("medicalRecords")
+    .where("clubId", "==", user.clubId)
+    .orderBy("createdAt", "desc")
+    .get();
+
+  // Enriquecer com nome do jogador
+  const rows = await Promise.all(
+    snap.docs.map(async (d) => {
+      const data = d.data();
+      let playerName = null;
+      if (data.playerId) {
+        const playerDoc = await adminDb.collection("players").doc(data.playerId).get();
+        if (playerDoc.exists) playerName = playerDoc.data()?.name;
+      }
+      return { id: d.id, ...data, playerName };
     })
-    .from(medicalRecords)
-    .leftJoin(players, eq(medicalRecords.playerId, players.id))
-    .where(eq(medicalRecords.clubId, user.clubId))
-    .orderBy(medicalRecords.createdAt);
+  );
 
-  return NextResponse.json(rows.reverse());
+  return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
-  const [record] = await db
-    .insert(medicalRecords)
-    .values({ ...parsed.data, clubId: user.clubId, createdBy: user.id })
-    .returning();
-
+  const ref = adminDb.collection("medicalRecords").doc();
+  const record = {
+    id: ref.id,
+    ...parsed.data,
+    clubId: user.clubId,
+    createdBy: user.id,
+    isActive: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  await ref.set(record);
   return NextResponse.json(record, { status: 201 });
 }

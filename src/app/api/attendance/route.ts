@@ -1,36 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { attendances } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
 
 const createSchema = z.object({
-  eventId: z.string().uuid(),
-  playerId: z.string().uuid(),
+  eventId: z.string(),
+  playerId: z.string(),
   status: z.enum(["present", "absent", "justified", "injured", "late"]),
   note: z.string().optional(),
 });
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
   const eventId = url.searchParams.get("eventId");
   if (!eventId) return NextResponse.json({ error: "eventId obrigatório" }, { status: 400 });
 
-  const rows = await db
-    .select()
-    .from(attendances)
-    .where(eq(attendances.eventId, eventId));
+  const snap = await adminDb
+    .collection("attendances")
+    .where("eventId", "==", eventId)
+    .get();
 
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -38,20 +37,29 @@ export async function POST(req: NextRequest) {
 
   const { eventId, playerId, status, note } = parsed.data;
 
-  // Upsert
-  const existing = await db
-    .select()
-    .from(attendances)
-    .where(and(eq(attendances.eventId, eventId), eq(attendances.playerId, playerId)))
-    .limit(1);
+  // Upsert: verificar se já existe
+  const existing = await adminDb
+    .collection("attendances")
+    .where("eventId", "==", eventId)
+    .where("playerId", "==", playerId)
+    .limit(1)
+    .get();
 
-  if (existing.length > 0) {
-    await db
-      .update(attendances)
-      .set({ status, note, updatedAt: new Date() })
-      .where(and(eq(attendances.eventId, eventId), eq(attendances.playerId, playerId)));
+  const data = {
+    eventId,
+    playerId,
+    status,
+    note: note || null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (!existing.empty) {
+    await existing.docs[0].ref.update(data);
   } else {
-    await db.insert(attendances).values({ eventId, playerId, status, note });
+    await adminDb.collection("attendances").add({
+      ...data,
+      createdAt: new Date().toISOString(),
+    });
   }
 
   return NextResponse.json({ success: true });

@@ -1,16 +1,16 @@
 import Link from "next/link";
-import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getServerUser } from "@/lib/firebase/server-auth";
 
 export default async function GrHomePage() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
+  const user = await getServerUser();
+  if (!user) redirect("/login");
 
   return (
     <div>
       <div className="page-header">
         <div>
-          <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>🥅 Portal — Treinador de GR's</h1>
+          <h1 style={{ fontSize: "1.25rem", fontWeight: 700 }}>🥅 Portal — Treinador de GR&apos;s</h1>
           <p style={{ color: "var(--text-muted)", fontSize: "0.8125rem" }}>
             Gestão de sessões e desenvolvimento de guarda-redes
           </p>

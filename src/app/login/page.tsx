@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -16,18 +17,27 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await signIn("credentials", {
-        email: form.email,
-        password: form.password,
-        redirect: false,
-      });
-      if (res?.error) {
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        form.email,
+        form.password
+      );
+
+      // Guardar o ID token num cookie para o servidor/middleware verificar
+      const idToken = await userCredential.user.getIdToken();
+      document.cookie = `__session=${idToken}; path=/; max-age=3600; SameSite=Strict`;
+
+      router.push("/dashboard");
+    } catch (err: any) {
+      if (
+        err.code === "auth/invalid-credential" ||
+        err.code === "auth/user-not-found" ||
+        err.code === "auth/wrong-password"
+      ) {
         setError("Email ou password incorretos.");
       } else {
-        router.push("/dashboard");
+        setError("Erro inesperado. Tenta novamente.");
       }
-    } catch {
-      setError("Erro inesperado. Tenta novamente.");
     } finally {
       setLoading(false);
     }

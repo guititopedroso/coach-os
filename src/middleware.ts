@@ -1,24 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+
+const PUBLIC_PATHS = [
+  "/api/register",
+  "/api/convite",
+  "/api/auth",
+  "/",
+  "/login",
+  "/register",
+  "/convite",
+];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Public routes - skip auth check
-  if (
-    pathname.startsWith("/api/auth") ||
-    pathname.startsWith("/api/register") ||
-    pathname.startsWith("/api/convite") ||
-    pathname === "/" ||
-    pathname === "/login" ||
-    pathname === "/register" ||
-    pathname.startsWith("/convite")
-  ) {
-    return NextResponse.next();
-  }
+  // Rotas públicas - sem verificação de auth
+  const isPublic = PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + "/")
+  );
+  if (isPublic) return NextResponse.next();
 
-  const session = await auth();
-  if (!session) {
+  // Verificar token Firebase no cookie __session ou no header Authorization
+  const token =
+    req.cookies.get("__session")?.value ||
+    req.headers.get("Authorization")?.replace("Bearer ", "");
+
+  if (!token) {
+    // Para API routes retorna 401; para páginas redireciona para login
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     return NextResponse.redirect(new URL("/login", req.url));
   }
 

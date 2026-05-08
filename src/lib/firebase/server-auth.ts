@@ -1,9 +1,21 @@
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
-import AppSidebar from "@/components/layout/AppSidebar";
 
-async function getSessionUser() {
+export interface ServerUser {
+  id: string;
+  email: string;
+  name: string;
+  clubId: string | null;
+  globalRole: "super_admin" | "club_admin" | "staff" | "player";
+  staffDept: "medical" | "udia" | "gr_coach" | null;
+  image: string | null;
+}
+
+/**
+ * Verifica o Firebase ID Token no cookie __session e devolve os dados do utilizador.
+ * Usar em Server Components e páginas do lado do servidor.
+ */
+export async function getServerUser(): Promise<ServerUser | null> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get("__session")?.value;
@@ -26,20 +38,4 @@ async function getSessionUser() {
   } catch {
     return null;
   }
-}
-
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const user = await getSessionUser();
-  if (!user) redirect("/login");
-
-  return (
-    <div className="app-layout">
-      <AppSidebar user={user as any} />
-      <main className="main-content">{children}</main>
-    </div>
-  );
 }

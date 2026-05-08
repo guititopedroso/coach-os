@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
-import { clubs, users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import bcrypt from "bcryptjs";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 
-const registerSchema = z.object({
+const createSchema = z.object({
   clubName: z.string().min(2).max(100),
   adminName: z.string().min(2).max(100),
   email: z.string().email(),
@@ -16,7 +15,7 @@ const registerSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const parsed = registerSchema.safeParse(body);
+    const parsed = createSchema.safeParse(body);
 
     if (!parsed.success) {
       return NextResponse.json(
@@ -27,50 +26,54 @@ export async function POST(req: NextRequest) {
 
     const { clubName, adminName, email, password, slug } = parsed.data;
 
-    // Verificar se email já existe
-    const existingUser = await db
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+    // Verificar slug único
+    const slugSnap = await adminDb
+      .collection("clubs")
+      .where("slug", "==", slug)
+      .limit(1)
+      .get();
 
-    if (existingUser.length > 0) {
-      return NextResponse.json(
-        { error: "Este email já está registado." },
-        { status: 409 }
-      );
+    const finalSlug = !slugSnap.empty ? `${slug}-${Date.now()}` : slug;
+
+    // Criar user no Firebase Auth
+    const { adminAuth } = await import("@/lib/firebase/admin");
+    let firebaseUser;
+    try {
+      firebaseUser = await adminAuth.createUser({ email, password, displayName: adminName });
+    } catch (err: any) {
+      if (err.code === "auth/email-already-exists") {
+        return NextResponse.json({ error: "Este email já está registado." }, { status: 409 });
+      }
+      throw err;
     }
 
-    // Verificar slug único
-    const existingClub = await db
-      .select({ id: clubs.id })
-      .from(clubs)
-      .where(eq(clubs.slug, slug))
-      .limit(1);
+    // Criar clube no Firestore
+    const clubRef = adminDb.collection("clubs").doc();
+    await clubRef.set({
+      name: clubName,
+      slug: finalSlug,
+      plan: "free",
+      maxTeams: 1,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
 
-    const finalSlug =
-      existingClub.length > 0 ? `${slug}-${Date.now()}` : slug;
-
-    // Criar clube
-    const [club] = await db
-      .insert(clubs)
-      .values({
-        name: clubName,
-        slug: finalSlug,
-        plan: "free",
-        maxTeams: 1,
-      })
-      .returning();
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
-    // Criar utilizador admin
-    await db.insert(users).values({
-      clubId: club.id,
+    // Criar perfil do utilizador no Firestore
+    await adminDb.collection("users").doc(firebaseUser.uid).set({
+      clubId: clubRef.id,
       email,
       name: adminName,
-      hashedPassword,
+      globalRole: "club_admin",
+      staffDept: null,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Definir custom claims no token Firebase Auth
+    await adminAuth.setCustomUserClaims(firebaseUser.uid, {
+      clubId: clubRef.id,
       globalRole: "club_admin",
     });
 
@@ -80,9 +83,6 @@ export async function POST(req: NextRequest) {
     );
   } catch (err) {
     console.error("[REGISTER]", err);
-    return NextResponse.json(
-      { error: "Erro interno do servidor." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Erro interno do servidor." }, { status: 500 });
   }
 }

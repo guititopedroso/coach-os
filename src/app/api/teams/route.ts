@@ -1,52 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { teams, seasons } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
 
 const createSchema = z.object({
   name: z.string().min(1),
   ageGroup: z.string().optional(),
   color: z.string().optional(),
-  seasonId: z.string().uuid(),
+  seasonId: z.string(),
 });
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const url = new URL(req.url);
   const seasonId = url.searchParams.get("seasonId");
 
-  let query = db.select().from(teams).where(eq(teams.clubId, user.clubId));
+  let query = adminDb.collection("teams").where("clubId", "==", user.clubId) as FirebaseFirestore.Query;
+  if (seasonId) query = query.where("seasonId", "==", seasonId);
 
-  const rows = seasonId
-    ? await db
-        .select()
-        .from(teams)
-        .where(and(eq(teams.clubId, user.clubId), eq(teams.seasonId, seasonId)))
-    : await db.select().from(teams).where(eq(teams.clubId, user.clubId));
-
+  const snap = await query.get();
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
-  }
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
-  const [team] = await db
-    .insert(teams)
-    .values({ ...parsed.data, clubId: user.clubId })
-    .returning();
-
+  const ref = adminDb.collection("teams").doc();
+  const team = {
+    id: ref.id,
+    ...parsed.data,
+    clubId: user.clubId,
+    createdAt: new Date().toISOString(),
+  };
+  await ref.set(team);
   return NextResponse.json(team, { status: 201 });
 }

@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { players } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -18,31 +16,27 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
-  const [updated] = await db
-    .update(players)
-    .set(parsed.data)
-    .where(eq(players.id, id))
-    .returning();
-
-  return NextResponse.json(updated);
+  await adminDb.collection("players").doc(id).update(parsed.data);
+  const doc = await adminDb.collection("players").doc(id).get();
+  return NextResponse.json({ id: doc.id, ...doc.data() });
 }
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(_req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  await db.update(players).set({ isActive: false }).where(eq(players.id, id));
+  await adminDb.collection("players").doc(id).update({ isActive: false });
   return NextResponse.json({ success: true });
 }

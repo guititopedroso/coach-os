@@ -1,23 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { medicalRecords } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
   const body = await req.json();
-  const [updated] = await db
-    .update(medicalRecords)
-    .set({ ...body, updatedAt: new Date() })
-    .where(eq(medicalRecords.id, id))
-    .returning();
+  await adminDb.collection("medicalRecords").doc(id).update({
+    ...body,
+    updatedAt: new Date().toISOString(),
+  });
 
-  return NextResponse.json(updated);
+  const doc = await adminDb.collection("medicalRecords").doc(id).get();
+  return NextResponse.json({ id: doc.id, ...doc.data() });
 }

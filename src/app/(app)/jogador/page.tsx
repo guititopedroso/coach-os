@@ -1,24 +1,26 @@
-import { auth } from "@/lib/auth";
+import { getServerUser } from "@/lib/firebase/server-auth";
+import { adminDb } from "@/lib/firebase/admin";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { players, events, questionnaireResponses } from "@/lib/db/schema";
-import { eq, and, gte, count } from "drizzle-orm";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 
+const EVENT_ICONS: Record<string, string> = {
+  training: "⚽", match: "🏆", rest: "😴", friendly: "🤝",
+  cup: "🏅", tournament: "🎯", cryo: "🧊", cohesion: "🎉", stage: "🏕️",
+};
+
 export default async function JogadorHomePage() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  const user = session.user as any;
+  const user = await getServerUser();
+  if (!user) redirect("/login");
 
   // Buscar o jogador ligado a este utilizador
-  const [player] = await db
-    .select()
-    .from(players)
-    .where(eq(players.userId, user.id))
-    .limit(1);
+  const playerSnap = await adminDb
+    .collection("players")
+    .where("userId", "==", user.id)
+    .limit(1)
+    .get();
 
-  if (!player) {
+  if (playerSnap.empty) {
     return (
       <div>
         <div className="page-header">
@@ -37,35 +39,31 @@ export default async function JogadorHomePage() {
     );
   }
 
+  const player = { id: playerSnap.docs[0].id, ...playerSnap.docs[0].data() } as any;
   const today = new Date().toISOString().split("T")[0];
 
-  // Próximos eventos (próximos 5 dias)
-  const nextEvents = await db
-    .select()
-    .from(events)
-    .where(and(eq(events.teamId, player.teamId), gte(events.date, today), eq(events.isPublished, true)))
-    .orderBy(events.date)
-    .limit(5);
+  // Próximos eventos
+  const nextEventsSnap = await adminDb
+    .collection("events")
+    .where("teamId", "==", player.teamId)
+    .where("date", ">=", today)
+    .where("isPublished", "==", true)
+    .orderBy("date")
+    .limit(5)
+    .get();
+  const nextEvents = nextEventsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
 
-  // Questionários pendentes hoje
-  const todayResponses = await db
-    .select()
-    .from(questionnaireResponses)
-    .where(
-      and(
-        eq(questionnaireResponses.playerId, player.id),
-        eq(questionnaireResponses.date, today)
-      )
-    );
+  // Questionários de hoje
+  const todayResponsesSnap = await adminDb
+    .collection("questionnaireResponses")
+    .where("playerId", "==", player.id)
+    .where("date", "==", today)
+    .get();
+  const todayResponses = todayResponsesSnap.docs.map((d) => d.data()) as any[];
 
-  const answeredPSR = todayResponses.some(r => r.type === "psr");
-  const todayMatchEvents = nextEvents.filter(e => e.date === today && ["match", "cup"].includes(e.type));
-  const todayTrainEvents = nextEvents.filter(e => e.date === today && ["training"].includes(e.type));
-
-  const EVENT_ICONS: Record<string, string> = {
-    training: "⚽", match: "🏆", rest: "😴", friendly: "🤝",
-    cup: "🏅", tournament: "🎯", cryo: "🧊", cohesion: "🎉", stage: "🏕️",
-  };
+  const answeredPSR = todayResponses.some((r) => r.type === "psr");
+  const todayMatchEvents = nextEvents.filter((e) => e.date === today && ["match", "cup"].includes(e.type));
+  const todayTrainEvents = nextEvents.filter((e) => e.date === today && e.type === "training");
 
   return (
     <div>
@@ -110,8 +108,8 @@ export default async function JogadorHomePage() {
               </div>
             )}
 
-            {todayTrainEvents.map(ev => {
-              const answered = todayResponses.some(r => r.type === "pse");
+            {todayTrainEvents.map((ev: any) => {
+              const answered = todayResponses.some((r) => r.type === "pse");
               if (answered) return null;
               return (
                 <div
@@ -128,8 +126,8 @@ export default async function JogadorHomePage() {
               );
             })}
 
-            {todayMatchEvents.map(ev => {
-              const answered = todayResponses.some(r => r.type === "post_match");
+            {todayMatchEvents.map((ev: any) => {
+              const answered = todayResponses.some((r) => r.type === "post_match");
               if (answered) return null;
               return (
                 <div
@@ -170,7 +168,7 @@ export default async function JogadorHomePage() {
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {nextEvents.map(ev => (
+              {nextEvents.map((ev: any) => (
                 <div key={ev.id} className="card" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                   <div style={{ fontSize: "1.25rem" }}>{EVENT_ICONS[ev.type] || "📌"}</div>
                   <div style={{ flex: 1 }}>

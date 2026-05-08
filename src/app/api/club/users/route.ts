@@ -1,27 +1,28 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
-import { eq, and, ne } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
+import { NextRequest } from "next/server";
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+export async function GET(req: NextRequest) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const rows = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      globalRole: users.globalRole,
-      staffDept: users.staffDept,
-      isActive: users.isActive,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .where(and(eq(users.clubId, user.clubId), ne(users.id, user.id)))
-    .orderBy(users.createdAt);
+  const snap = await adminDb
+    .collection("users")
+    .where("clubId", "==", user.clubId)
+    .get();
+
+  const rows = snap.docs
+    .filter((d) => d.id !== user.id)
+    .map((d) => ({
+      id: d.id,
+      name: d.data().name,
+      email: d.data().email,
+      globalRole: d.data().globalRole,
+      staffDept: d.data().staffDept,
+      isActive: d.data().isActive,
+      createdAt: d.data().createdAt,
+    }));
 
   return NextResponse.json(rows);
 }

@@ -1,27 +1,37 @@
-import { auth } from "@/lib/auth";
+import { getServerUser } from "@/lib/firebase/server-auth";
+import { adminDb } from "@/lib/firebase/admin";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { teams, seasons, players, events, questionnaireResponses } from "@/lib/db/schema";
-import { eq, and, count, gte } from "drizzle-orm";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 
-export default async function EquipaHomePage() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  const user = session.user as any;
+const EVENT_TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
+  training: { label: "Treino", color: "#3b82f6", icon: "⚽" },
+  match: { label: "Jogo", color: "#10b981", icon: "🏆" },
+  rest: { label: "Folga", color: "#6b7280", icon: "😴" },
+  friendly: { label: "Jogo Treino", color: "#8b5cf6", icon: "🤝" },
+  cup: { label: "Taça", color: "#f59e0b", icon: "🏅" },
+  tournament: { label: "Torneio", color: "#ec4899", icon: "🎯" },
+  cryo: { label: "Crioterapia", color: "#06b6d4", icon: "🧊" },
+  cohesion: { label: "Coesão", color: "#f97316", icon: "🎉" },
+  stage: { label: "Estágio", color: "#84cc16", icon: "🏕️" },
+};
 
-  // Para club_admin, redirecionar para /clube
+export default async function EquipaHomePage() {
+  const user = await getServerUser();
+  if (!user) redirect("/login");
+
   if (user.globalRole === "club_admin") redirect("/clube");
 
-  // Buscar equipa ativa para este utilizador (simplificado - pega primeira equipa do clube)
-  const allTeams = await db
-    .select()
-    .from(teams)
-    .where(eq(teams.clubId, user.clubId))
-    .limit(5);
+  const today = new Date().toISOString().split("T")[0];
 
-  if (allTeams.length === 0) {
+  // Buscar equipa do clube
+  const teamsSnap = await adminDb
+    .collection("teams")
+    .where("clubId", "==", user.clubId)
+    .limit(5)
+    .get();
+
+  if (teamsSnap.empty) {
     return (
       <div>
         <div className="page-header">
@@ -40,49 +50,34 @@ export default async function EquipaHomePage() {
     );
   }
 
-  const team = allTeams[0];
-  const today = new Date().toISOString().split("T")[0];
+  const team = { id: teamsSnap.docs[0].id, ...teamsSnap.docs[0].data() } as any;
 
   // Próximos eventos (próximos 7 dias)
-  const nextWeek = new Date();
-  nextWeek.setDate(nextWeek.getDate() + 7);
-  const nextWeekStr = nextWeek.toISOString().split("T")[0];
+  const upcomingEventsSnap = await adminDb
+    .collection("events")
+    .where("teamId", "==", team.id)
+    .where("date", ">=", today)
+    .orderBy("date")
+    .limit(5)
+    .get();
+  const upcomingEvents = upcomingEventsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
 
-  const upcomingEvents = await db
-    .select()
-    .from(events)
-    .where(and(eq(events.teamId, team.id), gte(events.date, today)))
-    .orderBy(events.date)
-    .limit(5);
+  // Total de jogadores
+  const playersSnap = await adminDb
+    .collection("players")
+    .where("teamId", "==", team.id)
+    .where("isActive", "==", true)
+    .get();
+  const totalPlayers = playersSnap.size;
 
-  const totalPlayers = await db
-    .select({ count: count() })
-    .from(players)
-    .where(and(eq(players.teamId, team.id), eq(players.isActive, true)));
-
-  // PSR hoje - quantos responderam
-  const psrToday = await db
-    .select({ count: count() })
-    .from(questionnaireResponses)
-    .where(
-      and(
-        eq(questionnaireResponses.teamId, team.id),
-        eq(questionnaireResponses.type, "psr"),
-        eq(questionnaireResponses.date, today)
-      )
-    );
-
-  const EVENT_TYPE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
-    training: { label: "Treino", color: "#3b82f6", icon: "⚽" },
-    match: { label: "Jogo", color: "#10b981", icon: "🏆" },
-    rest: { label: "Folga", color: "#6b7280", icon: "😴" },
-    friendly: { label: "Jogo Treino", color: "#8b5cf6", icon: "🤝" },
-    cup: { label: "Taça", color: "#f59e0b", icon: "🏅" },
-    tournament: { label: "Torneio", color: "#ec4899", icon: "🎯" },
-    cryo: { label: "Crioterapia", color: "#06b6d4", icon: "🧊" },
-    cohesion: { label: "Coesão", color: "#f97316", icon: "🎉" },
-    stage: { label: "Estágio", color: "#84cc16", icon: "🏕️" },
-  };
+  // PSR hoje
+  const psrSnap = await adminDb
+    .collection("questionnaireResponses")
+    .where("teamId", "==", team.id)
+    .where("type", "==", "psr")
+    .where("date", "==", today)
+    .get();
+  const psrToday = psrSnap.size;
 
   return (
     <div>
@@ -112,16 +107,13 @@ export default async function EquipaHomePage() {
           }}
         >
           {[
-            { label: "Atletas", value: totalPlayers[0]?.count ?? 0, icon: "👥", color: "#3b82f6" },
-            { label: "PSR Hoje", value: `${psrToday[0]?.count ?? 0}/${totalPlayers[0]?.count ?? 0}`, icon: "📊", color: "#10b981" },
+            { label: "Atletas", value: totalPlayers, icon: "👥", color: "#3b82f6" },
+            { label: "PSR Hoje", value: `${psrToday}/${totalPlayers}`, icon: "📊", color: "#10b981" },
             { label: "Próx. Evento", value: upcomingEvents[0] ? formatDate(upcomingEvents[0].date, "dd/MM") : "—", icon: "📅", color: "#8b5cf6" },
             { label: "Eventos (7d)", value: upcomingEvents.length, icon: "📋", color: "#f59e0b" },
           ].map((stat) => (
             <div key={stat.label} className="stat-card">
-              <div
-                className="stat-icon"
-                style={{ background: stat.color + "22", fontSize: "1.125rem" }}
-              >
+              <div className="stat-icon" style={{ background: stat.color + "22", fontSize: "1.125rem" }}>
                 {stat.icon}
               </div>
               <div className="stat-value" style={{ fontSize: "1.5rem" }}>{stat.value}</div>
@@ -143,7 +135,7 @@ export default async function EquipaHomePage() {
                   Nenhum evento planeado nos próximos 7 dias.
                 </div>
               ) : (
-                upcomingEvents.map((ev) => {
+                upcomingEvents.map((ev: any) => {
                   const cfg = EVENT_TYPE_CONFIG[ev.type] || { label: ev.type, color: "#6b7280", icon: "📌" };
                   return (
                     <div

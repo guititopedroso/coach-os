@@ -1,56 +1,55 @@
-import { auth } from "@/lib/auth";
+import { getServerUser } from "@/lib/firebase/server-auth";
+import { adminDb } from "@/lib/firebase/admin";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { clubs, seasons, teams, users, players } from "@/lib/db/schema";
-import { eq, and, count } from "drizzle-orm";
 import Link from "next/link";
 
 export default async function ClubePage() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
+  const user = await getServerUser();
+  if (!user) redirect("/login");
 
-  const user = session.user as any;
   if (!["club_admin", "super_admin"].includes(user.globalRole)) {
     redirect("/dashboard");
   }
 
   // Buscar dados do clube
-  const [club] = await db
-    .select()
-    .from(clubs)
-    .where(eq(clubs.id, user.clubId))
-    .limit(1);
-
-  if (!club) redirect("/login");
+  const clubDoc = await adminDb.collection("clubs").doc(user.clubId!).get();
+  if (!clubDoc.exists) redirect("/login");
+  const club = { id: clubDoc.id, ...clubDoc.data() } as any;
 
   // Épocas
-  const allSeasons = await db
-    .select()
-    .from(seasons)
-    .where(eq(seasons.clubId, club.id))
-    .orderBy(seasons.createdAt);
+  const seasonsSnap = await adminDb
+    .collection("seasons")
+    .where("clubId", "==", club.id)
+    .orderBy("createdAt", "desc")
+    .get();
+  const allSeasons = seasonsSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
 
-  const activeSeason = allSeasons.find((s) => s.isActive);
+  const activeSeason = allSeasons.find((s: any) => s.isActive);
 
   // Equipas da época ativa
-  const activeTeams = activeSeason
-    ? await db
-        .select()
-        .from(teams)
-        .where(eq(teams.seasonId, activeSeason.id))
+  const activeTeams: any[] = activeSeason
+    ? await adminDb
+        .collection("teams")
+        .where("seasonId", "==", activeSeason.id)
+        .get()
+        .then((snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() })))
     : [];
 
   // Staff total
-  const staffCount = await db
-    .select({ count: count() })
-    .from(users)
-    .where(and(eq(users.clubId, club.id), eq(users.isActive, true)));
+  const staffSnap = await adminDb
+    .collection("users")
+    .where("clubId", "==", club.id)
+    .where("isActive", "==", true)
+    .get();
+  const staffCount = staffSnap.size;
 
   // Atletas total
-  const playersCount = await db
-    .select({ count: count() })
-    .from(players)
-    .where(and(eq(players.clubId, club.id), eq(players.isActive, true)));
+  const playersSnap = await adminDb
+    .collection("players")
+    .where("clubId", "==", club.id)
+    .where("isActive", "==", true)
+    .get();
+  const playersCount = playersSnap.size;
 
   const planColors: Record<string, string> = {
     free: "#6b7280",
@@ -112,13 +111,13 @@ export default async function ClubePage() {
             },
             {
               label: "Staff",
-              value: staffCount[0]?.count ?? 0,
+              value: staffCount,
               icon: "👤",
               color: "#8b5cf6",
             },
             {
               label: "Atletas",
-              value: playersCount[0]?.count ?? 0,
+              value: playersCount,
               icon: "🏃",
               color: "#f59e0b",
             },
@@ -181,7 +180,7 @@ export default async function ClubePage() {
                   gap: "1rem",
                 }}
               >
-                {activeTeams.map((team) => (
+                {activeTeams.map((team: any) => (
                   <div
                     key={team.id}
                     className="card"

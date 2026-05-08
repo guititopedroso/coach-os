@@ -1,20 +1,19 @@
-import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getServerUser } from "@/lib/firebase/server-auth";
 
 export default async function DashboardPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
+  const user = await getServerUser();
+  if (!user) redirect("/login");
 
-  const role = (session.user as any).globalRole;
-  const staffDept = (session.user as any).staffDept;
+  const { globalRole, staffDept } = user;
 
-  if (role === "club_admin" || role === "super_admin") {
+  if (globalRole === "club_admin" || globalRole === "super_admin") {
     redirect("/clube");
   }
-  if (role === "player") {
+  if (globalRole === "player") {
     redirect("/jogador");
   }
-  if (role === "staff") {
+  if (globalRole === "staff") {
     if (staffDept === "medical") redirect("/medico");
     if (staffDept === "udia") redirect("/udia");
     if (staffDept === "gr_coach") redirect("/gr");

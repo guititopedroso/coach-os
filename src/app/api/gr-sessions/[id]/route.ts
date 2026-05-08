@@ -1,43 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { grSessions, grSessionPlayers } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
   const body = await req.json();
   const { playerIds, ...data } = body;
 
-  await db.update(grSessions).set(data).where(eq(grSessions.id, id));
+  if (Object.keys(data).length > 0) {
+    await adminDb.collection("grSessions").doc(id).update(data);
+  }
 
   if (playerIds !== undefined) {
-    await db.delete(grSessionPlayers).where(eq(grSessionPlayers.sessionId, id));
+    const existingSnap = await adminDb
+      .collection("grSessionPlayers")
+      .where("sessionId", "==", id)
+      .get();
+
+    const batch = adminDb.batch();
+    existingSnap.docs.forEach((d) => batch.delete(d.ref));
+
     if (playerIds.length > 0) {
-      await db.insert(grSessionPlayers).values(
-        playerIds.map((pid: string) => ({ sessionId: id, playerId: pid }))
-      );
+      playerIds.forEach((pid: string) => {
+        const pRef = adminDb.collection("grSessionPlayers").doc();
+        batch.set(pRef, { sessionId: id, playerId: pid });
+      });
     }
+    await batch.commit();
   }
 
   return NextResponse.json({ success: true });
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  await db.delete(grSessionPlayers).where(eq(grSessionPlayers.sessionId, id));
-  await db.delete(grSessions).where(eq(grSessions.id, id));
+  const playersSnap = await adminDb
+    .collection("grSessionPlayers")
+    .where("sessionId", "==", id)
+    .get();
+
+  const batch = adminDb.batch();
+  playersSnap.docs.forEach((d) => batch.delete(d.ref));
+  batch.delete(adminDb.collection("grSessions").doc(id));
+  await batch.commit();
+
   return NextResponse.json({ success: true });
 }

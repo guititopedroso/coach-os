@@ -1,21 +1,20 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { players } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
+import { NextRequest } from "next/server";
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+export async function GET(req: NextRequest) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [player] = await db
-    .select()
-    .from(players)
-    .where(eq(players.userId, user.id))
-    .limit(1);
+  const snap = await adminDb
+    .collection("players")
+    .where("userId", "==", user.id)
+    .limit(1)
+    .get();
 
-  if (!player) return NextResponse.json({ error: "Jogador não encontrado" }, { status: 404 });
+  if (snap.empty) return NextResponse.json({ error: "Jogador não encontrado" }, { status: 404 });
 
-  return NextResponse.json(player);
+  const doc = snap.docs[0];
+  return NextResponse.json({ id: doc.id, ...doc.data() });
 }

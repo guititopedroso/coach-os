@@ -1,10 +1,8 @@
-import { auth } from "@/lib/auth";
+import { getServerUser } from "@/lib/firebase/server-auth";
+import { adminDb } from "@/lib/firebase/admin";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { players, events } from "@/lib/db/schema";
-import { eq, and, gte } from "drizzle-orm";
 import { formatDate } from "@/lib/utils";
-import { format, addDays, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth } from "date-fns";
 import { pt } from "date-fns/locale";
 
 const EVENT_ICONS: Record<string, string> = {
@@ -23,48 +21,43 @@ const EVENT_LABELS: Record<string, string> = {
 };
 
 export default async function JogadorPlaneamentoPage() {
-  const session = await auth();
-  if (!session?.user) redirect("/login");
-  const user = session.user as any;
+  const user = await getServerUser();
+  if (!user) redirect("/login");
 
-  const [player] = await db
-    .select()
-    .from(players)
-    .where(eq(players.userId, user.id))
-    .limit(1);
+  const playerSnap = await adminDb
+    .collection("players")
+    .where("userId", "==", user.id)
+    .limit(1)
+    .get();
 
-  if (!player) redirect("/jogador");
+  if (playerSnap.empty) redirect("/jogador");
+
+  const player = { id: playerSnap.docs[0].id, ...playerSnap.docs[0].data() } as any;
 
   const today = new Date().toISOString().split("T")[0];
   const monthStart = format(startOfMonth(new Date()), "yyyy-MM-dd");
-  const monthEnd = format(endOfMonth(new Date()), "yyyy-MM-dd");
-
-  const upcomingEvents = await db
-    .select()
-    .from(events)
-    .where(
-      and(
-        eq(events.teamId, player.teamId),
-        gte(events.date, today),
-        eq(events.isPublished, true)
-      )
-    )
-    .orderBy(events.date)
-    .limit(20);
-
-  const monthEvents = await db
-    .select()
-    .from(events)
-    .where(
-      and(
-        eq(events.teamId, player.teamId),
-        eq(events.isPublished, true),
-        gte(events.date, monthStart)
-      )
-    )
-    .orderBy(events.date);
-
   const thisMonthLabel = format(new Date(), "MMMM yyyy", { locale: pt });
+
+  // Próximos eventos
+  const upcomingSnap = await adminDb
+    .collection("events")
+    .where("teamId", "==", player.teamId)
+    .where("isPublished", "==", true)
+    .where("date", ">=", today)
+    .orderBy("date")
+    .limit(20)
+    .get();
+  const upcomingEvents = upcomingSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
+
+  // Eventos do mês
+  const monthSnap = await adminDb
+    .collection("events")
+    .where("teamId", "==", player.teamId)
+    .where("isPublished", "==", true)
+    .where("date", ">=", monthStart)
+    .orderBy("date")
+    .get();
+  const monthEvents = monthSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as any[];
 
   return (
     <div>
@@ -89,7 +82,7 @@ export default async function JogadorPlaneamentoPage() {
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
-                {upcomingEvents.map((ev) => {
+                {upcomingEvents.map((ev: any) => {
                   const color = EVENT_COLORS[ev.type] || "#6b7280";
                   const isToday = ev.date === today;
                   return (
@@ -166,7 +159,7 @@ export default async function JogadorPlaneamentoPage() {
                 </p>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {monthEvents.map((ev) => {
+                  {monthEvents.map((ev: any) => {
                     const color = EVENT_COLORS[ev.type] || "#6b7280";
                     const isPast = ev.date < today;
                     return (

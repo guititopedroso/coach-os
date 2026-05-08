@@ -1,36 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { invites } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
-import { randomBytes } from "crypto";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
+import { randomBytes } from "crypto";
 
 const createSchema = z.object({
   email: z.string().email(),
   globalRole: z.enum(["staff", "player"]),
   staffDept: z.enum(["medical", "udia", "gr_coach"]).optional(),
-  teamId: z.string().uuid().optional(),
+  teamId: z.string().optional(),
 });
 
-export async function GET() {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+export async function GET(req: NextRequest) {
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const rows = await db
-    .select()
-    .from(invites)
-    .where(eq(invites.clubId, user.clubId))
-    .orderBy(invites.createdAt);
+  const snap = await adminDb
+    .collection("invites")
+    .where("clubId", "==", user.clubId)
+    .orderBy("createdAt", "desc")
+    .get();
 
-  return NextResponse.json(rows.reverse());
+  const rows = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return NextResponse.json(rows);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -38,24 +35,26 @@ export async function POST(req: NextRequest) {
 
   const token = randomBytes(32).toString("hex");
   const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 7); // 7 dias
+  expiresAt.setDate(expiresAt.getDate() + 7);
 
-  const [invite] = await db
-    .insert(invites)
-    .values({
-      clubId: user.clubId,
-      email: parsed.data.email,
-      globalRole: parsed.data.globalRole,
-      staffDept: parsed.data.staffDept,
-      teamId: parsed.data.teamId,
-      token,
-      expiresAt,
-      createdBy: user.id,
-    })
-    .returning();
+  const ref = adminDb.collection("invites").doc();
+  const invite = {
+    id: ref.id,
+    clubId: user.clubId,
+    email: parsed.data.email,
+    globalRole: parsed.data.globalRole,
+    staffDept: parsed.data.staffDept || null,
+    teamId: parsed.data.teamId || null,
+    token,
+    expiresAt: expiresAt.toISOString(),
+    acceptedAt: null,
+    createdBy: user.id,
+    createdAt: new Date().toISOString(),
+  };
+  await ref.set(invite);
 
   return NextResponse.json({
     ...invite,
-    inviteLink: `${process.env.NEXTAUTH_URL}/convite/${token}`,
+    inviteLink: `${process.env.NEXT_PUBLIC_APP_URL}/convite/${token}`,
   }, { status: 201 });
 }

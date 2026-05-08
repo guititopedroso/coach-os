@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { udiaSessions, udiaSessionPlayers, players } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { getAuthUser } from "@/lib/firebase/auth-helpers";
+import { adminDb } from "@/lib/firebase/admin";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -19,39 +17,43 @@ const createSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const sessions = await db
-    .select()
-    .from(udiaSessions)
-    .where(eq(udiaSessions.clubId, user.clubId))
-    .orderBy(udiaSessions.date);
+  const sessionsSnap = await adminDb
+    .collection("udiaSessions")
+    .where("clubId", "==", user.clubId)
+    .orderBy("date", "desc")
+    .get();
 
   const sessionsWithPlayers = await Promise.all(
-    sessions.map(async (s) => {
-      const sessionPlayers = await db
-        .select({
-          playerId: udiaSessionPlayers.playerId,
-          feedback: udiaSessionPlayers.feedback,
-          clipUrls: udiaSessionPlayers.clipUrls,
-          playerName: players.name,
+    sessionsSnap.docs.map(async (d) => {
+      const sessionData = { id: d.id, ...d.data() };
+      const playersSnap = await adminDb
+        .collection("udiaSessionPlayers")
+        .where("sessionId", "==", d.id)
+        .get();
+
+      const players = await Promise.all(
+        playersSnap.docs.map(async (p) => {
+          const pd = p.data();
+          const playerDoc = await adminDb.collection("players").doc(pd.playerId).get();
+          return {
+            ...pd,
+            playerName: playerDoc.exists ? playerDoc.data()?.name : null,
+          };
         })
-        .from(udiaSessionPlayers)
-        .leftJoin(players, eq(udiaSessionPlayers.playerId, players.id))
-        .where(eq(udiaSessionPlayers.sessionId, s.id));
-      return { ...s, players: sessionPlayers };
+      );
+      return { ...sessionData, players };
     })
   );
 
-  return NextResponse.json(sessionsWithPlayers.reverse());
+  return NextResponse.json(sessionsWithPlayers);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const user = session.user as any;
+  const user = await getAuthUser(req);
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -59,21 +61,30 @@ export async function POST(req: NextRequest) {
 
   const { players: sessionPlayers, ...sessionData } = parsed.data;
 
-  const [udiaSession] = await db
-    .insert(udiaSessions)
-    .values({ ...sessionData, clubId: user.clubId, createdBy: user.id })
-    .returning();
+  const ref = adminDb.collection("udiaSessions").doc();
+  const session = {
+    id: ref.id,
+    ...sessionData,
+    clipUrls: sessionData.clipUrls || [],
+    clubId: user.clubId,
+    createdBy: user.id,
+    createdAt: new Date().toISOString(),
+  };
+  await ref.set(session);
 
   if (sessionPlayers && sessionPlayers.length > 0) {
-    await db.insert(udiaSessionPlayers).values(
-      sessionPlayers.map((p) => ({
-        sessionId: udiaSession.id,
+    const batch = adminDb.batch();
+    sessionPlayers.forEach((p) => {
+      const pRef = adminDb.collection("udiaSessionPlayers").doc();
+      batch.set(pRef, {
+        sessionId: ref.id,
         playerId: p.playerId,
-        feedback: p.feedback,
+        feedback: p.feedback || null,
         clipUrls: p.clipUrls || [],
-      }))
-    );
+      });
+    });
+    await batch.commit();
   }
 
-  return NextResponse.json(udiaSession, { status: 201 });
+  return NextResponse.json(session, { status: 201 });
 }
