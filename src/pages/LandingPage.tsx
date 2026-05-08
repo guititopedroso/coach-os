@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
+import { collection, addDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase/client'
 import { 
   Trophy, 
   Users, 
@@ -31,6 +33,41 @@ export default function LandingPage() {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Lead Form State
+  const [formData, setFormData] = useState({
+    name: '',
+    role: 'Coordenação',
+    club: '',
+    teams: '1-3 Equipas',
+    email: '',
+    notes: ''
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
+
+  const handleDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    try {
+      await addDoc(collection(db, 'leads'), {
+        ...formData,
+        status: 'pendente',
+        createdAt: new Date()
+      })
+      setIsSuccess(true)
+      setTimeout(() => {
+        setIsDemoModalOpen(false)
+        setIsSuccess(false)
+        setFormData({ name: '', role: 'Coordenação', club: '', teams: '1-3 Equipas', email: '', notes: '' })
+      }, 3000)
+    } catch (err) {
+      console.error('Erro ao enviar lead:', err)
+      alert('Erro ao enviar pedido. Tenta novamente.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden">
@@ -330,9 +367,16 @@ export default function LandingPage() {
         </div>
       </footer>
 
-      {/* Modal de Demo - Reutilizado do anterior */}
+      {/* Modal de Demo */}
       {isDemoModalOpen && (
-        <DemoModal onClose={() => setIsDemoModalOpen(false)} />
+        <DemoModal 
+          onClose={() => setIsDemoModalOpen(false)} 
+          formData={formData}
+          setFormData={setFormData}
+          onSubmit={handleDemoSubmit}
+          isSubmitting={isSubmitting}
+          isSuccess={isSuccess}
+        />
       )}
     </div>
   )
@@ -445,56 +489,109 @@ function PriceItem({ text }: { text: string }) {
   )
 }
 
-function DemoModal({ onClose }: any) {
+function DemoModal({ onClose, formData, setFormData, onSubmit, isSubmitting, isSuccess }: any) {
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-200 flex items-center justify-center p-6 animate-in fade-in duration-300">
-      <div className="bg-white w-full max-w-2xl rounded-[48px] shadow-2xl p-12 space-y-10 relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white w-full max-w-2xl rounded-[48px] shadow-2xl p-12 space-y-10 relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto text-left">
         <button onClick={onClose} className="absolute top-8 right-8 p-3 text-slate-300 hover:text-slate-900 transition-colors bg-slate-50 rounded-full">
            <Plus className="rotate-45" size={24} />
         </button>
 
         <div className="text-center space-y-4">
           <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto">
-             <Play size={24} fill="currentColor" />
+             {isSuccess ? <Check className="text-emerald-500" size={32} /> : <Play size={24} fill="currentColor" />}
           </div>
-          <h3 className="text-3xl font-black text-slate-900 italic underline decoration-blue-600/20">Pedir Demonstração</h3>
-          <p className="text-slate-500 font-medium">Conta-nos um pouco sobre o teu clube e entraremos em contacto.</p>
+          <h3 className="text-3xl font-black text-slate-900 italic underline decoration-blue-600/20">
+            {isSuccess ? 'Pedido Enviado!' : 'Pedir Demonstração'}
+          </h3>
+          <p className="text-slate-500 font-medium">
+            {isSuccess ? 'Entraremos em contacto muito em breve.' : 'Conta-nos um pouco sobre o teu clube e entraremos em contacto.'}
+          </p>
         </div>
 
-        <form className="grid md:grid-cols-2 gap-6" onSubmit={(e) => e.preventDefault()}>
-          <ModalInput label="Nome Completo" placeholder="Ex: António Silva" />
-          <ModalInput label="Cargo" placeholder="Ex: Coordenador" />
-          <ModalInput label="Nome do Clube" placeholder="Ex: G.D. Estoril" />
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nº Equipas</label>
-            <select className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm">
-              <option>1-3 Equipas</option>
-              <option>4-8 Equipas</option>
-              <option>9-15 Equipas</option>
-              <option>15+ Equipas</option>
-            </select>
-          </div>
-          <div className="md:col-span-2 space-y-1.5">
-             <ModalInput label="Email Profissional" placeholder="email@clube.pt" />
-          </div>
-          <div className="md:col-span-2 space-y-1.5">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Notas Adicionais</label>
-            <textarea className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm h-24" placeholder="Alguma necessidade específica?"></textarea>
-          </div>
-          <button className="md:col-span-2 py-5 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 active:scale-95">
-            Enviar Pedido de Demo
-          </button>
-        </form>
+        {!isSuccess && (
+          <form className="grid md:grid-cols-2 gap-6" onSubmit={onSubmit}>
+            <ModalInput 
+              label="Nome Completo" 
+              placeholder="Ex: António Silva" 
+              value={formData.name}
+              onChange={(val: string) => setFormData({...formData, name: val})}
+            />
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Cargo</label>
+              <select 
+                value={formData.role}
+                onChange={(e: any) => setFormData({...formData, role: e.target.value})}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm"
+              >
+                <option>Coordenação</option>
+                <option>Treinador</option>
+                <option>Presidente/Direção</option>
+                <option>Outro</option>
+              </select>
+            </div>
+            <ModalInput 
+              label="Nome do Clube" 
+              placeholder="Ex: G.D. Estoril" 
+              value={formData.club}
+              onChange={(val: string) => setFormData({...formData, club: val})}
+            />
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Nº Equipas</label>
+              <select 
+                value={formData.teams}
+                onChange={(e: any) => setFormData({...formData, teams: e.target.value})}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm"
+              >
+                <option>1-3 Equipas</option>
+                <option>4-8 Equipas</option>
+                <option>9-15 Equipas</option>
+                <option>15+ Equipas</option>
+              </select>
+            </div>
+            <div className="md:col-span-2 space-y-1.5">
+               <ModalInput 
+                label="Email Profissional" 
+                placeholder="email@clube.pt" 
+                value={formData.email}
+                onChange={(val: string) => setFormData({...formData, email: val})}
+              />
+            </div>
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Notas Adicionais</label>
+              <textarea 
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm h-24" 
+                placeholder="Alguma necessidade específica?"
+              ></textarea>
+            </div>
+            <button 
+              type="submit"
+              disabled={isSubmitting}
+              className="md:col-span-2 py-5 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-200 active:scale-95 disabled:opacity-50"
+            >
+              {isSubmitting ? 'A enviar...' : 'Enviar Pedido de Demo'}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   )
 }
 
-function ModalInput({ label, placeholder }: any) {
+function ModalInput({ label, placeholder, value, onChange }: any) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 text-left">
       <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">{label}</label>
-      <input type="text" placeholder={placeholder} className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-blue-200 transition-all" />
+      <input 
+        type="text" 
+        required
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder} 
+        className="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-blue-200 transition-all" 
+      />
     </div>
   )
 }
