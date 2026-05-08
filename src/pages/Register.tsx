@@ -18,7 +18,9 @@ export default function Register() {
       await createUserWithEmailAndPassword(auth, email, password)
       navigate('/dashboard')
     } catch (err: any) {
-      setError('Erro ao criar conta. Verifique os dados.')
+      console.error("Erro no registo:", err);
+      // Mostrar a mensagem real do Firebase para diagnóstico
+      setError(err.message || 'Erro ao criar conta.');
     } finally {
       setLoading(false)
     }
