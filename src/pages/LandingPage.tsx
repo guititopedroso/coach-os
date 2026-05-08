@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { LayoutDashboard, Users, Trophy, ClipboardCheck, ArrowRight, Star, Check, HelpCircle, ShieldCheck, Globe, CreditCard } from 'lucide-react'
+import { LayoutDashboard, Users, Trophy, ClipboardCheck, ArrowRight, Star, Check, HelpCircle, ShieldCheck, Globe } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export default function LandingPage() {
@@ -16,22 +16,22 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-indigo-600 selection:text-white">
+    <div className="min-h-screen bg-zinc-950 text-white font-sans selection:bg-indigo-500 selection:text-white">
       {/* Header / Nav */}
-      <nav className="flex items-center justify-between px-8 py-5 max-w-7xl mx-auto sticky top-0 bg-white/80 backdrop-blur-md z-50 border-b border-zinc-100">
+      <nav className="flex items-center justify-between px-8 py-6 max-w-7xl mx-auto sticky top-0 bg-zinc-950/80 backdrop-blur-md z-50 border-b border-zinc-900">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 bg-indigo-900 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
-            <Trophy className="text-white" size={20} />
+          <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center">
+            <Trophy className="text-black" size={20} />
           </div>
-          <span className="text-2xl font-black tracking-tighter text-indigo-950">CoachOS</span>
+          <span className="text-2xl font-black tracking-tighter">CoachOS</span>
         </div>
         <div className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-sm font-semibold text-zinc-500 hover:text-indigo-600 transition-colors">Funcionalidades</a>
-          <a href="#pricing" className="text-sm font-semibold text-zinc-500 hover:text-indigo-600 transition-colors">Preços</a>
+          <a href="#features" className="text-sm font-semibold text-zinc-400 hover:text-white transition-colors">Funcionalidades</a>
+          <a href="#pricing" className="text-sm font-semibold text-zinc-400 hover:text-white transition-colors">Preços</a>
         </div>
         <div className="flex items-center gap-4">
-          <Link to="/login" className="text-sm font-bold text-zinc-600 hover:text-indigo-600 transition-colors px-4">Entrar</Link>
-          <Link to="/register" className="px-6 py-3 bg-indigo-900 text-white text-sm font-bold rounded-xl hover:bg-indigo-800 transition-all shadow-xl shadow-indigo-100 active:scale-95">
+          <Link to="/login" className="text-sm font-bold text-zinc-400 hover:text-white transition-colors px-4">Entrar</Link>
+          <Link to="/register" className="px-6 py-3 bg-white text-black text-sm font-bold rounded-xl hover:bg-zinc-200 transition-all active:scale-95">
             Começar Agora
           </Link>
         </div>
@@ -39,60 +39,53 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="px-6 pt-24 pb-32 max-w-7xl mx-auto text-center space-y-10">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-xs font-bold text-indigo-600 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-          <Globe size={14} />
-          <span>A plataforma líder para clubes de alto rendimento</span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs font-bold text-zinc-400 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+          <Star size={12} className="text-yellow-500 fill-yellow-500" />
+          <span>A ferramenta definitiva para clubes de alto rendimento</span>
         </div>
         
-        <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-[0.95] text-indigo-950">
-          Gestão Desportiva <br />
-          <span className="text-indigo-600 italic">Redefinida.</span>
+        <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-[0.95]">
+          Gere o teu clube. <br />
+          <span className="text-zinc-500">Eleva a performance.</span>
         </h1>
         
-        <p className="max-w-2xl mx-auto text-xl md:text-2xl text-zinc-500 font-medium leading-relaxed">
-          O CoachOS centraliza todos os departamentos do seu clube numa única interface intuitiva e segura. Planeamento, Medicina, e Performance em total harmonia.
+        <p className="max-w-2xl mx-auto text-xl text-zinc-400 leading-relaxed">
+          Centraliza a coordenação, equipa técnica e atletas numa única plataforma. Simples, eficaz e desenhada para vencer.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 animate-in fade-in slide-in-from-bottom-16 duration-1000 delay-500">
-          <Link to="/register" className="w-full sm:w-auto px-10 py-5 bg-indigo-900 text-white text-lg font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-indigo-800 transition-all shadow-2xl shadow-indigo-200">
-            Solicitar Demonstração <ArrowRight size={22} />
+          <Link to="/register" className="w-full sm:w-auto px-10 py-5 bg-white text-black text-lg font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-zinc-200 transition-all">
+            Criar Conta Demo <ArrowRight size={22} />
           </Link>
-          <a href="#pricing" className="w-full sm:w-auto px-10 py-5 bg-white border-2 border-zinc-100 text-zinc-900 text-lg font-bold rounded-2xl hover:bg-zinc-50 transition-all">
-            Ver Planos
+          <a href="#pricing" className="w-full sm:w-auto px-10 py-5 bg-zinc-900 border border-zinc-800 text-white text-lg font-bold rounded-2xl hover:bg-zinc-800 transition-all">
+            Ver Planos de Clube
           </a>
-        </div>
-        
-        <div className="pt-16 grid grid-cols-2 md:grid-cols-4 gap-8 opacity-40 grayscale max-w-4xl mx-auto">
-          <div className="font-black text-2xl">LIGA PRO</div>
-          <div className="font-black text-2xl">ELITE FC</div>
-          <div className="font-black text-2xl">GLOBAL SPORTS</div>
-          <div className="font-black text-2xl">TECH ACADEMY</div>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="px-6 py-32 bg-zinc-50/50">
+      <section id="features" className="px-6 py-32 bg-zinc-900/30 border-y border-zinc-900">
         <div className="max-w-7xl mx-auto space-y-20">
-          <div className="text-center space-y-4 max-w-3xl mx-auto">
-            <h2 className="text-4xl font-black tracking-tight text-indigo-950">Uma estrutura profissional <br/>ao seu alcance.</h2>
-            <p className="text-lg text-zinc-500">Esqueça as folhas de Excel e os processos manuais. O CoachOS digitaliza o seu clube de ponta a ponta.</p>
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-black tracking-tight text-white underline decoration-indigo-500 decoration-4 underline-offset-8">Funcionalidades Core</h2>
+            <p className="text-zinc-400">Tudo o que precisas para digitalizar o teu clube.</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-10">
+          <div className="grid md:grid-cols-3 gap-8">
             <FeatureCard 
               icon={<Users />} 
-              title="Workspaces Dedicados" 
-              description="Acessos exclusivos para Coordenação, Equipa Técnica, Departamento Médico, GRs e UDIA."
+              title="Gestão de Plantel" 
+              description="Controlo total de atletas, dados médicos e histórico de performance."
             />
             <FeatureCard 
               icon={<ClipboardCheck />} 
-              title="Monitorização em Tempo Real" 
-              description="Acompanhe o estado físico e mental dos seus atletas através de questionários PSR e PSE automáticos."
+              title="Análise Wellness" 
+              description="Questionários PSR e PSE com dashboards automáticos para o staff."
             />
             <FeatureCard 
               icon={<LayoutDashboard />} 
-              title="Planeamento Inteligente" 
-              description="Gestão de épocas, macrociclos e sessões de treino com publicação controlada para os atletas."
+              title="Planeamento" 
+              description="Calendário mensal e semanal com publicação controlada para os jogadores."
             />
           </div>
         </div>
@@ -101,90 +94,91 @@ export default function LandingPage() {
       {/* Pricing Section */}
       <section id="pricing" className="px-6 py-32 max-w-7xl mx-auto space-y-20">
         <div className="text-center space-y-4">
-          <h2 className="text-4xl font-black tracking-tight text-indigo-950">Planos de Subscrição</h2>
-          <p className="text-lg text-zinc-500">Preços transparentes desenhados para todos os tamanhos de clubes.</p>
+          <h2 className="text-4xl font-black tracking-tight">Planos Flexíveis</h2>
+          <p className="text-zinc-400">Escolhe o plano que melhor se adapta à dimensão do teu projeto.</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-4 gap-6">
           <PricingCard 
-            title="Starter"
-            price="Grátis"
-            description="Ideal para treinadores individuais."
-            features={['1 Equipa', 'Até 25 Jogadores', 'Planeamento Mensal', 'Questionário PSR Básico']}
+            title="Individual"
+            price="€19"
+            period="/mês"
+            description="Para 1 Treinador & 1 Equipa."
+            features={['1 Equipa', 'Até 30 Atletas', 'Planeamento Base', 'Questionários PSR']}
           />
           <PricingCard 
-            title="Standard"
+            title="Clube Base"
             price="€49"
             period="/mês"
-            description="Perfeito para clubes locais em crescimento."
-            features={['Até 5 Equipas', 'Jogadores Ilimitados', 'Módulo Médico Básico', 'Exportação Excel', 'Suporte Via Email']}
+            description="Para clubes com 3 equipas."
+            features={['Até 3 Equipas', 'Atletas Ilimitados', 'Acesso Médico', 'Exportação Excel']}
             highlighted
           />
           <PricingCard 
-            title="Elite"
-            price="Sob Consulta"
-            description="A solução total para clubes profissionais."
-            features={['Equipas Ilimitadas', 'Módulo Médico Completo', 'UDIA & Treino de GRs', 'API de Integração', 'Account Manager Dedicado']}
+            title="Clube Pro"
+            price="€79"
+            period="/mês"
+            description="Para clubes com 5 equipas."
+            features={['Até 5 Equipas', 'Módulos GR & UDIA', 'Suporte Prioritário', 'Análise de Vídeo']}
+          />
+          <PricingCard 
+            title="Clube Elite"
+            price="€129"
+            period="/mês"
+            description="Para clubes até 10 equipas."
+            features={['Até 10 Equipas', 'Funcionalidades V3', 'Consultoria Técnica', 'Custom Branding']}
           />
         </div>
       </section>
 
-      {/* Legal Footer */}
-      <footer className="bg-zinc-950 text-white px-8 py-20 mt-20">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-16">
-          <div className="space-y-6 col-span-2">
+      {/* Footer Legal */}
+      <footer className="bg-black text-white px-8 py-20 mt-20 border-t border-zinc-900">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-16">
+          <div className="space-y-6">
             <div className="flex items-center gap-2">
-              <Trophy size={28} className="text-indigo-400" />
+              <Trophy size={28} className="text-white" />
               <span className="text-2xl font-black tracking-tighter">CoachOS</span>
             </div>
-            <p className="text-zinc-400 max-w-sm leading-relaxed">
-              O CoachOS é uma plataforma de gestão desportiva que cumpre rigorosamente com o RGPD (Regulamento Geral de Proteção de Dados). Garantimos a segurança e confidencialidade dos dados dos seus atletas.
+            <p className="text-zinc-500 text-sm leading-relaxed">
+              Cumprimos rigorosamente com o RGPD para garantir a segurança dos dados do teu clube e atletas.
             </p>
-            <div className="flex gap-4 items-center">
-              <ShieldCheck className="text-indigo-400" size={24} />
-              <span className="text-sm font-bold text-zinc-300 italic">ISO 27001 Compliant Architecture</span>
+          </div>
+          <div className="space-y-6">
+            <h4 className="text-lg font-bold">Legal</h4>
+            <ul className="space-y-3 text-zinc-500 text-sm">
+              <li><Link to="/terms" className="hover:text-white transition-colors">Termos de Utilização</Link></li>
+              <li><Link to="/privacy" className="hover:text-white transition-colors">Política de Privacidade</Link></li>
+              <li><Link to="/privacy" className="hover:text-white transition-colors">RGPD & Cookies</Link></li>
+            </ul>
+          </div>
+          <div className="space-y-6">
+            <h4 className="text-lg font-bold">Apoio</h4>
+            <p className="text-zinc-500 text-sm">Suporte 24/7 disponível para planos de Clube Pro e Elite.</p>
+            <div className="flex gap-4">
+              <ShieldCheck className="text-zinc-500" />
+              <Globe className="text-zinc-500" />
             </div>
           </div>
-          <div className="space-y-6">
-            <h4 className="text-lg font-bold">Documentação Legal</h4>
-            <ul className="space-y-3 text-zinc-400 text-sm">
-              <li><Link to="/terms" className="hover:text-white transition-colors underline decoration-zinc-800">Termos de Utilização</Link></li>
-              <li><Link to="/privacy" className="hover:text-white transition-colors underline decoration-zinc-800">Política de Privacidade</Link></li>
-              <li><Link to="/privacy" className="hover:text-white transition-colors underline decoration-zinc-800">Política de Cookies</Link></li>
-            </ul>
-          </div>
-          <div className="space-y-6">
-            <h4 className="text-lg font-bold">Apoio ao Cliente</h4>
-            <ul className="space-y-3 text-zinc-400 text-sm">
-              <li>Centro de Ajuda</li>
-              <li>Contacto de Suporte</li>
-              <li>Email: legal@coach-os.pt</li>
-            </ul>
-          </div>
         </div>
-        <div className="max-w-7xl mx-auto pt-12 mt-12 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-6 text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+        <div className="max-w-7xl mx-auto pt-12 mt-12 border-t border-zinc-900 text-center text-zinc-600 text-xs">
           <p>© 2026 CoachOS. Todos os direitos reservados. Made in Portugal.</p>
-          <div className="flex gap-8">
-            <span>Segurança HTTPS</span>
-            <span>RGPD Validado</span>
-          </div>
         </div>
       </footer>
 
       {/* Cookie Banner */}
       {showCookies && (
-        <div className="fixed bottom-8 right-8 left-8 md:left-auto md:w-[400px] bg-white border border-zinc-200 shadow-2xl rounded-3xl p-6 z-100 animate-in slide-in-from-bottom-8 duration-500">
+        <div className="fixed bottom-8 right-8 left-8 md:left-auto md:w-[400px] bg-zinc-900 border border-zinc-800 shadow-2xl rounded-3xl p-6 z-100 animate-in slide-in-from-bottom-8 duration-500">
           <div className="flex gap-4 items-start">
-            <HelpCircle className="text-indigo-600 shrink-0" size={24} />
+            <HelpCircle className="text-indigo-500 shrink-0" size={24} />
             <div className="space-y-4">
-              <p className="text-sm text-zinc-600 leading-relaxed">
-                Utilizamos cookies para melhorar a sua experiência e garantir a segurança do site. Ao continuar, concorda com a nossa <Link to="/privacy" className="text-indigo-600 font-bold underline">Política de Privacidade</Link>.
+              <p className="text-sm text-zinc-400 leading-relaxed">
+                Utilizamos cookies para melhorar a tua experiência. Ao continuar, aceitas a nossa política de privacidade.
               </p>
               <button 
                 onClick={acceptCookies}
-                className="w-full py-3 bg-indigo-900 text-white font-bold rounded-xl hover:bg-indigo-800 transition-all"
+                className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-zinc-200 transition-all"
               >
-                Aceitar e Continuar
+                Aceitar
               </button>
             </div>
           </div>
@@ -196,11 +190,11 @@ export default function LandingPage() {
 
 function FeatureCard({ icon, title, description }: any) {
   return (
-    <div className="p-10 bg-white border border-zinc-100 rounded-[32px] space-y-6 hover:shadow-2xl hover:shadow-indigo-100 hover:border-indigo-100 transition-all group">
-      <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all text-indigo-600">
+    <div className="p-10 bg-zinc-900/50 border border-zinc-800 rounded-3xl space-y-6 hover:border-zinc-600 transition-all group">
+      <div className="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center group-hover:bg-white group-hover:text-black transition-all text-zinc-400">
         {icon}
       </div>
-      <h3 className="text-xl font-bold text-indigo-950">{title}</h3>
+      <h3 className="text-xl font-bold text-white">{title}</h3>
       <p className="text-zinc-500 leading-relaxed">{description}</p>
     </div>
   )
@@ -208,30 +202,25 @@ function FeatureCard({ icon, title, description }: any) {
 
 function PricingCard({ title, price, period, description, features, highlighted }: any) {
   return (
-    <div className={`p-10 rounded-[40px] border-2 ${highlighted ? 'border-indigo-600 bg-white scale-105 shadow-3xl shadow-indigo-100' : 'border-zinc-50 bg-zinc-50/50 text-zinc-900'} space-y-8 transition-all relative overflow-hidden`}>
-      {highlighted && (
-        <div className="absolute top-5 right-5 bg-indigo-600 text-white text-[10px] font-black uppercase px-3 py-1 rounded-full">
-          Mais Popular
-        </div>
-      )}
-      <div className="space-y-3">
-        <h3 className="text-xl font-black text-indigo-950 uppercase tracking-tight">{title}</h3>
+    <div className={`p-8 rounded-3xl border ${highlighted ? 'border-white bg-white text-black scale-105' : 'border-zinc-800 bg-zinc-900/50 text-white'} space-y-6 transition-all`}>
+      <div className="space-y-2">
+        <h3 className="text-lg font-bold">{title}</h3>
         <div className="flex items-baseline gap-1">
-          <span className="text-5xl font-black text-indigo-950 tracking-tighter">{price}</span>
-          {period && <span className="text-lg font-bold text-zinc-400">{period}</span>}
+          <span className="text-4xl font-extrabold">{price}</span>
+          {period && <span className="text-sm opacity-60">{period}</span>}
         </div>
-        <p className="text-sm font-medium text-zinc-500 leading-relaxed">{description}</p>
+        <p className={`text-sm ${highlighted ? 'text-zinc-600' : 'text-zinc-500'}`}>{description}</p>
       </div>
-      <ul className="space-y-4">
+      <ul className="space-y-3">
         {features.map((f: string) => (
-          <li key={f} className="flex items-center gap-3 text-sm font-bold text-zinc-700">
-            <Check size={18} className="text-indigo-600" />
+          <li key={f} className="flex items-center gap-3 text-sm font-bold">
+            <Check size={16} className={highlighted ? 'text-black' : 'text-white'} />
             {f}
           </li>
         ))}
       </ul>
-      <Link to="/register" className={`w-full block py-4 text-center font-bold rounded-2xl transition-all shadow-lg ${highlighted ? 'bg-indigo-900 text-white hover:bg-indigo-800 shadow-indigo-200' : 'bg-white text-indigo-900 hover:bg-zinc-100 border border-zinc-100'}`}>
-        Selecionar Plano
+      <Link to="/register" className={`w-full block py-3 text-center font-bold rounded-xl transition-all ${highlighted ? 'bg-black text-white hover:opacity-90' : 'bg-white text-black hover:bg-zinc-200'}`}>
+        Escolher Plano
       </Link>
     </div>
   )

@@ -28,6 +28,9 @@ import SessionDetail from './pages/equipa/SessionDetail'
 // Workspace Jogador
 import Questionnaire from './pages/jogador/Questionnaire'
 
+// Demo
+import DemoSeeder from './pages/DemoSeeder'
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
@@ -49,6 +52,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/demo-setup" element={<DemoSeeder />} />
         
         {/* Autenticação */}
         <Route path="/login" element={!user ? <Login /> : <Navigate to="/dashboard" />} />

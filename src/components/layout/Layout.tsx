@@ -10,7 +10,6 @@ import {
   ClipboardCheck, 
   TrendingUp,
   ChevronLeft,
-  ChevronRight,
   Settings,
   Bell
 } from 'lucide-react'
@@ -29,78 +28,75 @@ export default function Layout() {
   const isActive = (path: string) => location.pathname === path
 
   return (
-    <div className="flex h-screen bg-zinc-50 text-zinc-900 font-sans overflow-hidden">
-      {/* Sidebar Premium Clara */}
-      <aside className={`${sidebarOpen ? 'w-72' : 'w-20'} border-r border-zinc-200 bg-white transition-all duration-500 flex flex-col shadow-sm z-50`}>
+    <div className="flex h-screen bg-zinc-950 text-white font-sans overflow-hidden">
+      {/* Sidebar Escura Premium */}
+      <aside className={`${sidebarOpen ? 'w-72' : 'w-20'} border-r border-zinc-900 bg-zinc-950 transition-all duration-300 flex flex-col shadow-2xl z-50`}>
         <div className="p-8 flex items-center justify-between">
-          <Link to="/" className={`flex items-center gap-2 group ${!sidebarOpen && 'hidden'}`}>
-            <div className="w-8 h-8 bg-indigo-900 rounded-lg flex items-center justify-center text-white">
+          <Link to="/" className={`flex items-center gap-2 ${!sidebarOpen && 'hidden'}`}>
+            <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-black">
               <Trophy size={18} />
             </div>
-            <span className="font-black text-xl tracking-tighter text-indigo-950">CoachOS</span>
+            <span className="font-black text-xl tracking-tighter">CoachOS</span>
           </Link>
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-zinc-100 rounded-xl transition-colors text-zinc-400">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 hover:bg-zinc-900 rounded-xl transition-colors text-zinc-500">
             {sidebarOpen ? <ChevronLeft size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto">
-          <div className={`px-4 py-3 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ${!sidebarOpen && 'hidden'}`}>
-            Geral
+        <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
+          <div className={`px-4 py-3 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ${!sidebarOpen && 'hidden'}`}>
+            Plataforma
           </div>
           <NavLink to="/dashboard" icon={<LayoutDashboard size={20} />} label="Dashboard" open={sidebarOpen} active={isActive('/dashboard')} />
           
-          <div className={`pt-6 pb-3 px-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ${!sidebarOpen && 'hidden'}`}>
-            Workspace Clube
+          <div className={`pt-6 pb-3 px-4 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ${!sidebarOpen && 'hidden'}`}>
+            Clube
           </div>
           <NavLink to="/clube/epocas" icon={<Trophy size={20} />} label="Épocas" open={sidebarOpen} active={isActive('/clube/epocas')} />
           <NavLink to="/clube/equipas" icon={<Users size={20} />} label="Equipas" open={sidebarOpen} active={isActive('/clube/equipas')} />
-          <NavLink to="/clube/acessos" icon={<ClipboardCheck size={20} />} label="Controlo de Acessos" open={sidebarOpen} active={isActive('/clube/acessos')} />
+          <NavLink to="/clube/acessos" icon={<ClipboardCheck size={20} />} label="Acessos" open={sidebarOpen} active={isActive('/clube/acessos')} />
 
-          <div className={`pt-6 pb-3 px-4 text-[10px] font-black text-zinc-400 uppercase tracking-[0.2em] ${!sidebarOpen && 'hidden'}`}>
+          <div className={`pt-6 pb-3 px-4 text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] ${!sidebarOpen && 'hidden'}`}>
             Equipa Técnica
           </div>
           <NavLink to="/equipa/planeamento" icon={<LayoutDashboard size={20} />} label="Planeamento" open={sidebarOpen} active={isActive('/equipa/planeamento')} />
-          <NavLink to="/equipa/plantel" icon={<Users size={20} />} label="Gestão de Plantel" open={sidebarOpen} active={isActive('/equipa/plantel')} />
-          <NavLink to="/equipa/analise" icon={<TrendingUp size={20} />} label="Análise de Dados" open={sidebarOpen} active={isActive('/equipa/analise')} />
+          <NavLink to="/equipa/plantel" icon={<Users size={20} />} label="Plantel" open={sidebarOpen} active={isActive('/equipa/plantel')} />
+          <NavLink to="/equipa/analise" icon={<TrendingUp size={20} />} label="Análise" open={sidebarOpen} active={isActive('/equipa/analise')} />
         </nav>
 
-        <div className="p-4 border-t border-zinc-100 space-y-2">
+        <div className="p-4 border-t border-zinc-900">
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 text-zinc-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all font-bold text-sm"
+            className="w-full flex items-center gap-3 px-4 py-3 text-zinc-500 hover:text-white hover:bg-zinc-900 rounded-xl transition-all font-bold text-sm"
           >
             <LogOut size={20} />
-            {sidebarOpen && <span>Sair da Conta</span>}
+            {sidebarOpen && <span>Sair</span>}
           </button>
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {/* Content Area */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Header Barra */}
-        <header className="h-20 bg-white border-b border-zinc-200 flex items-center justify-between px-8 shrink-0">
-          <div className="flex items-center gap-4">
-             {/* Breadcrumbs ou Status seriam aqui */}
-          </div>
+        <header className="h-20 bg-zinc-950 border-b border-zinc-900 flex items-center justify-between px-8 shrink-0">
+          <div className="flex items-center gap-4"></div>
           <div className="flex items-center gap-6">
-            <button className="p-2 text-zinc-400 hover:text-indigo-600 transition-colors relative">
+            <button className="p-2 text-zinc-500 hover:text-white transition-colors relative">
               <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-600 rounded-full border-2 border-white"></span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full border-2 border-zinc-950"></span>
             </button>
-            <div className="flex items-center gap-3 pl-6 border-l border-zinc-100">
+            <div className="flex items-center gap-3 pl-6 border-l border-zinc-900">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-bold text-zinc-900 leading-none">{auth.currentUser?.displayName || 'Treinador Principal'}</p>
-                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight mt-1">Admin Clube</p>
+                <p className="text-sm font-bold text-white leading-none">{auth.currentUser?.displayName || 'Coach Demo'}</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tight mt-1">Admin Clube</p>
               </div>
-              <div className="w-10 h-10 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center font-black text-indigo-900">
-                {auth.currentUser?.displayName?.[0] || 'T'}
+              <div className="w-10 h-10 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center font-black text-white">
+                {auth.currentUser?.displayName?.[0] || 'C'}
               </div>
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto bg-zinc-50/50 p-8">
+        <div className="flex-1 overflow-y-auto p-8">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>
@@ -116,11 +112,11 @@ function NavLink({ to, icon, label, open, active }: { to: string, icon: any, lab
       to={to} 
       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-bold text-sm ${
         active 
-          ? 'bg-indigo-900 text-white shadow-lg shadow-indigo-100' 
-          : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900'
+          ? 'bg-white text-black shadow-lg' 
+          : 'text-zinc-500 hover:bg-zinc-900 hover:text-white'
       }`}
     >
-      <div className={active ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-900'}>
+      <div className={active ? 'text-black' : 'text-zinc-500'}>
         {icon}
       </div>
       {open && <span className="truncate">{label}</span>}

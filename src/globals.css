@@ -6,11 +6,11 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #09090b;
-  --primary: #1e1b4b; /* Indigo profundo */
-  --secondary: #f4f4f5;
-  --accent: #3b82f6;
+  --background: #09090b; /* Zinc 950 */
+  --foreground: #ffffff;
+  --primary: #4f46e5; /* Indigo 600 */
+  --card: #18181b; /* Zinc 900 */
+  --border: #27272a; /* Zinc 800 */
 }
 
 body {
@@ -27,20 +27,20 @@ html, body, #root {
   padding: 0;
 }
 
-/* Scrollbar personalizada para tema claro */
+/* Scrollbar escura premium */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #09090b;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: #27272a;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: #3f3f46;
 }
