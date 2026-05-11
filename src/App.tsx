@@ -4,37 +4,35 @@ import { onAuthStateChanged, User } from 'firebase/auth'
 import { auth } from './lib/firebase/client'
 
 // Componentes Públicos
-import LandingPage from './pages/LandingPage'
-import Login from './pages/Login'
-import Register from './pages/Register'
-import Terms from './pages/Terms'
-import Privacy from './pages/Privacy'
+import LandingPage from './pages/LandingPage.tsx'
+import Login from './pages/Login.tsx'
+import Register from './pages/Register.tsx'
+import Terms from './pages/Terms.tsx'
+import Privacy from './pages/Privacy.tsx'
 
 // Dashboard & Layout
-import Dashboard from './pages/Dashboard'
-import Layout from './components/layout/Layout'
+import Dashboard from './pages/Dashboard.tsx'
+import Layout from './components/layout/Layout.tsx'
 
 // Workspace Clube
-import Seasons from './pages/clube/Seasons'
-import Teams from './pages/clube/Teams'
-import Access from './pages/clube/Access'
-import ClubProfile from './pages/clube/Profile'
+import Seasons from './pages/clube/Seasons.tsx'
+import Teams from './pages/clube/Teams.tsx'
+import Access from './pages/clube/Access.tsx'
+import ClubProfile from './pages/clube/Profile.tsx'
 
 // Workspace Equipa
-import Planning from './pages/equipa/Planning'
-import Squad from './pages/equipa/Squad'
-import Analytics from './pages/equipa/Analytics'
-import SessionDetail from './pages/equipa/SessionDetail'
+import Planning from './pages/equipa/Planning.tsx'
+import Squad from './pages/equipa/Squad.tsx'
+import Analytics from './pages/equipa/Analytics.tsx'
+import SessionDetail from './pages/equipa/SessionDetail.tsx'
 
 // Workspace Jogador
-import Questionnaire from './pages/jogador/Questionnaire'
+import Questionnaire from './pages/jogador/Questionnaire.tsx'
 
 // Auth & Security
-import ForcePasswordChange from './pages/auth/ForcePasswordChange'
-import RegisterClub from './pages/RegisterClub'
-
-// Demo
-import DemoSeeder from './pages/DemoSeeder'
+import ForcePasswordChange from './pages/auth/ForcePasswordChange.tsx'
+import RegisterClub from './pages/RegisterClub.tsx'
+import DemoSeeder from './pages/DemoSeeder.tsx'
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
@@ -49,6 +47,7 @@ export default function App() {
   }, [])
 
   if (loading) return <div className="h-screen w-screen flex items-center justify-center bg-zinc-950 text-white font-sans font-bold animate-pulse">CoachOS</div>
+
 
   return (
     <Router>
