@@ -4,36 +4,36 @@ import { onAuthStateChanged, User } from 'firebase/auth'
 import { auth } from './lib/firebase/client'
 
 // Componentes Públicos
-import LandingPage from './pages/LandingPage.tsx'
-import Login from './pages/Login.tsx'
-import Register from './pages/Register.tsx'
-import Terms from './pages/Terms.tsx'
-import Privacy from './pages/Privacy.tsx'
-import FAQ from './pages/FAQ.tsx'
+import LandingPage from './pages/LandingPage'
+import Login from './pages/Login'
+import Register from './pages/Register'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
+import FAQ from './pages/FAQ'
 
 // Dashboard & Layout
-import Dashboard from './pages/Dashboard.tsx'
-import Layout from './components/layout/Layout.tsx'
+import Dashboard from './pages/Dashboard'
+import Layout from './components/layout/Layout'
 
 // Workspace Clube
-import Seasons from './pages/clube/Seasons.tsx'
-import Teams from './pages/clube/Teams.tsx'
-import Access from './pages/clube/Access.tsx'
-import ClubProfile from './pages/clube/Profile.tsx'
+import Seasons from './pages/clube/Seasons'
+import Teams from './pages/clube/Teams'
+import Access from './pages/clube/Access'
+import ClubProfile from './pages/clube/Profile'
 
 // Workspace Equipa
-import Planning from './pages/equipa/Planning.tsx'
-import Squad from './pages/equipa/Squad.tsx'
-import Analytics from './pages/equipa/Analytics.tsx'
-import SessionDetail from './pages/equipa/SessionDetail.tsx'
+import Planning from './pages/equipa/Planning'
+import Squad from './pages/equipa/Squad'
+import Analytics from './pages/equipa/Analytics'
+import SessionDetail from './pages/equipa/SessionDetail'
 
 // Workspace Jogador
-import Questionnaire from './pages/jogador/Questionnaire.tsx'
+import Questionnaire from './pages/jogador/Questionnaire'
 
 // Auth & Security
-import ForcePasswordChange from './pages/auth/ForcePasswordChange.tsx'
-import RegisterClub from './pages/RegisterClub.tsx'
-import DemoSeeder from './pages/DemoSeeder.tsx'
+import ForcePasswordChange from './pages/auth/ForcePasswordChange'
+import RegisterClub from './pages/RegisterClub'
+import DemoSeeder from './pages/DemoSeeder'
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
