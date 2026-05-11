@@ -46,9 +46,9 @@ export default function ForcePasswordChange() {
     <div className="min-h-screen relative flex items-center justify-center p-6 font-sans overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1431324155629-1a6fc1ac1e73?auto=format&fit=crop&q=80" 
-          alt="Stadium Background" 
+        <img
+          src="https://images.unsplash.com/photo-1431324155629-1a6fc1ac1e73?auto=format&fit=crop&q=80"
+          alt="Stadium Background"
           className="w-full h-full object-cover scale-105"
         />
         <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-[2px]"></div>
@@ -81,7 +81,7 @@ export default function ForcePasswordChange() {
                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">Nova Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                  <input 
+                  <input
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -95,7 +95,7 @@ export default function ForcePasswordChange() {
                 <label className="text-[10px] font-black text-zinc-400 uppercase tracking-widest px-1">Confirmar Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
-                  <input 
+                  <input
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -115,7 +115,7 @@ export default function ForcePasswordChange() {
               </div>
             </div>
 
-            <button 
+            <button
               disabled={loading}
               className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-500 transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
             >

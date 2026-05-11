@@ -9,6 +9,7 @@ import Login from './pages/Login.tsx'
 import Register from './pages/Register.tsx'
 import Terms from './pages/Terms.tsx'
 import Privacy from './pages/Privacy.tsx'
+import FAQ from './pages/FAQ.tsx'
 
 // Dashboard & Layout
 import Dashboard from './pages/Dashboard.tsx'
@@ -56,6 +57,7 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/faq" element={<FAQ />} />
         <Route path="/demo-setup" element={<DemoSeeder />} />
         
         {/* Autenticação */}

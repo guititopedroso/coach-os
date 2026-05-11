@@ -55,9 +55,19 @@ export default function Layout() {
   const isAdmin = userRole === 'admin_clube'
 
   return (
-    <div className="flex h-screen bg-zinc-950 text-white font-sans overflow-hidden">
+    <div className="flex h-screen relative bg-zinc-950 text-white font-sans overflow-hidden">
+      {/* Background App */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <img 
+          src="https://images.unsplash.com/photo-1518605368461-1b76cb5fe493?auto=format&fit=crop&q=80" 
+          alt="App Background" 
+          className="w-full h-full object-cover opacity-30 mix-blend-luminosity"
+        />
+        <div className="absolute inset-0 bg-linear-to-tr from-zinc-950 via-zinc-950/90 to-blue-950/20"></div>
+      </div>
+
       {/* Sidebar Inteligente */}
-      <aside className={`${sidebarOpen ? 'w-72' : 'w-20'} border-r border-zinc-900 bg-zinc-950 transition-all duration-300 flex flex-col shadow-2xl z-50`}>
+      <aside className={`relative z-50 ${sidebarOpen ? 'w-72' : 'w-20'} border-r border-white/5 bg-zinc-950/50 backdrop-blur-2xl transition-all duration-300 flex flex-col shadow-2xl shadow-black/50`}>
         <div className="p-8 flex items-center justify-between">
           <Link to="/" className={`flex items-center gap-2 ${!sidebarOpen && 'hidden'}`}>
             <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-black">
@@ -110,31 +120,31 @@ export default function Layout() {
       </aside>
 
       {/* Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-20 bg-zinc-950 border-b border-zinc-900 flex items-center justify-between px-8 shrink-0">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-10">
+        <header className="h-20 bg-zinc-950/50 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-8 shrink-0 shadow-sm">
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500 bg-zinc-900 px-3 py-1 rounded-full border border-zinc-800">
+            <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20 backdrop-blur-sm">
               {isAdmin ? 'Acesso Total' : 'Acesso Técnico'}
             </span>
           </div>
           <div className="flex items-center gap-6">
-            <button className="p-2 text-zinc-500 hover:text-white transition-colors relative">
+            <button className="p-2 text-zinc-400 hover:text-white transition-colors relative">
               <Bell size={20} />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-white rounded-full border-2 border-zinc-950"></span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-blue-500 rounded-full border-2 border-zinc-950"></span>
             </button>
-            <div className="flex items-center gap-3 pl-6 border-l border-zinc-900">
+            <div className="flex items-center gap-3 pl-6 border-l border-white/10">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-bold text-white leading-none">{auth.currentUser?.displayName || 'Utilizador'}</p>
-                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-tight mt-1">{isAdmin ? 'Coordenação' : 'Equipa Técnica'}</p>
+                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-tight mt-1">{isAdmin ? 'Coordenação' : 'Equipa Técnica'}</p>
               </div>
-              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center font-black text-black">
+              <div className="w-10 h-10 bg-linear-to-tr from-blue-600 to-indigo-500 shadow-lg shadow-blue-500/20 rounded-xl flex items-center justify-center font-black text-white">
                 {auth.currentUser?.displayName?.[0] || 'U'}
               </div>
             </div>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           <div className="max-w-7xl mx-auto">
             <Outlet />
           </div>

@@ -446,8 +446,8 @@ export default function LandingPage() {
              <h4 className="font-black text-slate-900 uppercase text-xs tracking-[0.2em]">Apoio</h4>
              <ul className="space-y-4 text-sm font-bold text-slate-500">
                 <li><button onClick={() => setIsDemoModalOpen(true)} className="hover:text-blue-600 transition-colors">Demonstração</button></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">Contactar Suporte</a></li>
-                <li><a href="#" className="hover:text-blue-600 transition-colors">FAQ</a></li>
+                <li><a href="mailto:suporte@coach-os.pt" className="hover:text-blue-600 transition-colors">Contactar Suporte</a></li>
+                <li><Link to="/faq" className="hover:text-blue-600 transition-colors">FAQ</Link></li>
              </ul>
           </div>
           <div className="space-y-6 text-left">
@@ -455,6 +455,8 @@ export default function LandingPage() {
              <ul className="space-y-4 text-sm font-bold text-slate-500">
                 <li><Link to="/terms" className="hover:text-blue-600 transition-colors">Termos e Condições</Link></li>
                 <li><Link to="/privacy" className="hover:text-blue-600 transition-colors">Política de Privacidade</Link></li>
+                <li><a href="https://www.livroreclamacoes.pt/Inicio/" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">Livro de Reclamações</a></li>
+                <li><a href="https://livrodeelogios.com/" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">Livro de Elogios</a></li>
              </ul>
           </div>
         </div>
