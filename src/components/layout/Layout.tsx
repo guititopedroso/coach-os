@@ -11,7 +11,8 @@ import {
   ClipboardCheck, 
   TrendingUp,
   ChevronLeft,
-  Bell
+  Bell,
+  Settings
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
